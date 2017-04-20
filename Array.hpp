@@ -1,40 +1,62 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <stdio.h>
+#include <vector>
 
 class Array {
-  public:
-    Array(int, int);  // Constructor
-    ~Array();  // Destructor
+ public:
+  Array(int, int);  // Constructor
+  ~Array() {};  // Destructor
 
-    Array* operator+(Array*);
-    Array* operator*(Array*);
-    Array* operator+=(Array*);
-    Array* operator*=(Array*);
+  // Arithmetic operators: two arrays
+  Array operator+(const Array&) const;
+  Array operator-(const Array&) const;
+  Array operator*(const Array&) const;
+  Array operator/(const Array&) const;
 
-    Array* operator+(double);
-    Array* operator*(double);
-    Array* operator+=(double);
-    Array* operator*=(double);
+  // Assignment operators: two arrays
+  Array& operator+=(const Array&);
+  Array& operator-=(const Array&);
+  Array& operator*=(const Array&);
+  Array& operator/=(const Array&);
 
-    void fill(Array*);
-    void fill(double);
+  // Arithmetic operators: array and constant
+  Array operator+(const double&) const;
+  Array operator-(const double&) const;
+  Array operator*(const double&) const;
+  Array operator/(const double&) const;
 
-    void setVal(int, int, double);
-    double getVal(int, int);
-    double getVal(int);
-    void print(int, int);
+  // Assignment operators: array and constant
+  Array& operator+=(const double&);
+  Array& operator-=(const double&);
+  Array& operator*=(const double&);
+  Array& operator/=(const double&);
 
-    int get_nx() {return nx;};
-    int get_ny() {return ny;};
-    int get_n() {return n;};
+  // Fill an array
+  Array& fill(const Array&);
+  Array& fill(const double&);
 
-  private:
-    int nx, ny, n;
-    double* data;
+  // Data access
+  double& operator()(const int&, const int&);
+  const double& operator()(const int&, const int&) const;
+
+  // Data access (1D)
+  double& operator()(const int&);
+  const double& operator()(const int&) const;
+
+  void print(int, int);
+
+  int get_nx() {return nx;};
+  int get_ny() {return ny;};
+  int get_n() {return n;};
+
+ private:
+  int nx, ny, n;
+  std::vector<double> data;
 };
 
 #endif

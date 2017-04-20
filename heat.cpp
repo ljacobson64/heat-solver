@@ -2,103 +2,86 @@
 
 #include "Array.hpp"
 
-void solve_fourier_2D(Array* xx, Array* yy, Array *k, Array *Q) {
-  Array *dx, *dy, *kdx, *kdy, *kdydx, *kdxdy, *denom, *Q_gen, *T, *T_old;
+void solve_fourier_2D(Array x, Array y, Array k, Array Q) {
 
-  int nx = xx->get_nx() - 1;
-  int ny = yy->get_ny() - 1;
+  int nx = x.get_nx() - 1;
+  int ny = y.get_ny() - 1;
 
   // dx: x-direction mesh; 1D; on intervals
-  dx = new Array(nx, 1);
+  Array dx(nx, 1);
   for (int i = 0; i < nx; i++)
-    dx->setVal(i, 0, xx->getVal(i + 1, 0) - xx->getVal(i, 0));
+    dx(i) = x(i + 1, 0) - x(i, 0);
 
   // dy: y-direction mesh; 1D; on intervals
-  dy = new Array(1, ny);
+  Array dy(1, ny);
   for (int j = 0; j < ny; j++)
-    dy->setVal(0, j, yy->getVal(0, j + 1) - yy->getVal(0, j));
+    dy(j) = y(0, j + 1) - y(0, j);
 
   // kdy: k times y-direction mesh: 2D; on dx intervals
-  kdy = new Array(nx, ny + 1);
+  Array kdy(nx, ny + 1);
   for (int j = 1; j < ny; j++)
     for (int i = 0; i < nx; i++)  // Internal
-      kdy->setVal(i, j, 0.5*(k->getVal(i, j - 1)*dy->getVal(j - 1) +
-                             k->getVal(i, j)*dy->getVal(j)));
+      kdy(i, j) = 0.5 * (k(i, j - 1) * dy(j - 1) + k(i, j) * dy(j));
 
   for (int i = 0; i < nx; i++) {  // Bottom, top
-    kdy->setVal(i, 0, 0.5*k->getVal(i, 0)*dy->getVal(0));
-    kdy->setVal(i, ny, 0.5*k->getVal(i, ny - 1)*dy->getVal(ny - 1));
+    kdy(i, 0) = 0.5 * k(i, 0) * dy(0);
+    kdy(i, ny) = 0.5 * k(i, ny - 1) * dy(ny - 1);
   }
 
   // kdx: k times x-direction mesh: 2D; on dy intervals
-  kdx = new Array(nx + 1, ny);
+  Array kdx(nx + 1, ny);
   for (int j = 0; j < ny; j++)
     for (int i = 1; i < nx; i++)  // Internal
-      kdx->setVal(i, j, 0.5*(k->getVal(i - 1, j)*dx->getVal(i - 1) +
-                             k->getVal(i, j)*dx->getVal(i)));
+      kdx(i, j) = 0.5 * (k(i - 1, j) * dx(i - 1) + k(i, j) * dx(i));
   for (int j = 0; j < ny; j++) {  // Left, right
-    kdx->setVal(0, j, 0.5*k->getVal(0, j)*dx->getVal(0));
-    kdx->setVal(nx, j, 0.5*k->getVal(nx - 1, j)*dx->getVal(nx - 1));
+    kdx(0, j) = 0.5 * k(0, j) * dx(0);
+    kdx(nx, j) = 0.5 * k(nx - 1, j) * dx(nx - 1);
   }
 
   // kdy/dx
-  kdydx = new Array(nx, ny + 1);
+  Array kdydx(nx, ny + 1);
   for (int j = 0; j < ny + 1; j++)
     for (int i = 0; i < nx; i++)
-      kdydx->setVal(i, j, kdy->getVal(i, j)/dx->getVal(i));
-  delete kdy, dx;
+      kdydx(i, j) = kdy(i, j) / dx(i);
 
   // kdx/dy
-  kdxdy = new Array(nx + 1, ny);
+  Array kdxdy(nx + 1, ny);
   for (int j = 0; j < ny; j++)
     for (int i = 0; i < nx + 1; i++)
-      kdxdy->setVal(i, j, kdx->getVal(i, j)/dy->getVal(j));
-  delete kdx, dy;
+      kdxdy(i, j) = kdx(i, j) / dy(j);
 
   // Denominator
-  denom = new Array(nx + 1, ny + 1);
+  Array denom(nx + 1, ny + 1);
   for (int i = 1; i < nx; i++)
     for (int j = 1; j < ny; j++)
-      denom->setVal(i, j, kdydx->getVal(i - 1, j) + kdydx->getVal(i, j) +
-                          kdxdy->getVal(i, j - 1) + kdxdy->getVal(i, j));
+      denom(i, j) = kdydx(i - 1, j) + kdydx(i, j) + kdxdy(i, j - 1) +
+                    kdxdy(i, j);
 
   // Heat source
-  Q_gen = new Array(nx + 1, ny + 1);
+  Array Q_gen(nx + 1, ny + 1);
   for (int j = 1; j < ny; j++) {
     for (int i = 1; i < nx; i++) {
-      Q_gen->setVal(i, j, 0.25*(
-          Q->getVal(i - 1, j - 1)*dx->getVal(i - 1)*dy->getVal(j - 1) +
-          Q->getVal(i - 1, j)*dx->getVal(i - 1)*dy->getVal(j) +
-          Q->getVal(i, j - 1)*dx->getVal(i)*dy->getVal(j - 1) +
-          Q->getVal(i, j)*dx->getVal(i)*dy->getVal(j)));
+      Q_gen(i, j) = 0.25 * (Q(i - 1, j - 1) * dx(i - 1) * dy(j - 1) +
+                            Q(i - 1, j) * dx(i - 1) * dy(j) +
+                            Q(i, j - 1) * dx(i) * dy(j - 1) + Q(i, j) * dx(i) * dy(j));
     }
-    Q_gen->setVal(0, j, 0.25*(
-        Q->getVal(0, j - 1)*dx->getVal(0)*dy->getVal(j - 1) +
-        Q->getVal(0, j)*dx->getVal(0)*dy->getVal(j)));
-    Q_gen->setVal(nx, j, 0.25*(
-        Q->getVal(nx - 1, j - 1)*dx->getVal(nx - 1)*dy->getVal(j - 1) +
-        Q->getVal(nx - 1, j)*dx->getVal(nx - 1)*dy->getVal(j)));
+    Q_gen(0, j) = 0.25 * (Q(0, j - 1) * dx(0) * dy(j - 1) + Q(0, j) * dx(0) * dy(j));
+    Q_gen(nx, j) = 0.25 * (Q(nx - 1, j - 1) * dx(nx - 1) * dy(j - 1) +
+                           Q(nx - 1, j) * dx(nx - 1) * dy(j));
   }
   for (int i = 1; i < nx; i++) {
-    Q_gen->setVal(i, 0, 0.25*(
-        Q->getVal(i - 1, 0)*dx->getVal(i - 1)*dy->getVal(0) +
-        Q->getVal(i, 0)*dx->getVal(i)*dy->getVal(0)));
-    Q_gen->setVal(i, ny, 0.25*(
-        Q->getVal(i - 1, ny - 1)*dx->getVal(i - 1)*dy->getVal(ny - 1) +
-        Q->getVal(i, ny - 1)*dx->getVal(i)*dy->getVal(ny - 1)));
+    Q_gen(i, 0) = 0.25 * (Q(i - 1, 0) * dx(i - 1) * dy(0) + Q(i, 0) * dx(i) * dy(0));
+    Q_gen(i, ny) = 0.25 * (Q(i - 1, ny - 1) * dx(i - 1) * dy(ny - 1) +
+                           Q(i, ny - 1) * dx(i) * dy(ny - 1));
   }
-  Q_gen->setVal(0, 0,
-      0.25*Q->getVal(0, 0)*dx->getVal(0)*dy->getVal(0));
-  Q_gen->setVal(0, ny,
-      0.25*Q->getVal(0, ny - 1)*dx->getVal(0)*dy->getVal(ny - 1));
-  Q_gen->setVal(nx, 0,
-      0.25*Q->getVal(nx - 1, 0)*dx->getVal(nx - 1)*dy->getVal(0));
-  Q_gen->setVal(nx, ny,
-      0.25*Q->getVal(nx - 1, ny - 1)*dx->getVal(nx - 1)*dy->getVal(ny - 1));
+  Q_gen(0, 0) = 0.25 * Q(0, 0) * dx(0) * dy(0);
+  Q_gen(0, ny) = 0.25 * Q(0, ny - 1) * dx(0) * dy(ny - 1);
+  Q_gen(nx, 0) = 0.25 * Q(nx - 1, 0) * dx(nx - 1) * dy(0);
+  Q_gen(nx, ny) = 0.25 * Q(nx - 1, ny - 1) * dx(nx - 1) * dy(ny - 1);
   //Q_gen->print(5, 0);
 
-  T = new Array(nx + 1, ny + 1);
-  T_old = new Array(nx + 1, ny + 1);
+  Array T(nx + 1, ny + 1);
+  Array T_old(nx + 1, ny + 1);
 
   int it = 0;
   double max_dif = 1e100;
@@ -110,37 +93,33 @@ void solve_fourier_2D(Array* xx, Array* yy, Array *k, Array *Q) {
     it++;
 
     // Old temperature values
-    T_old->fill(T);
+    T_old.fill(T);
 
     // Internal nodes
     for (int j = 1; j < ny; j++)
       for (int i = 1; i < nx; i++)
-        T->setVal(i, j, (kdydx->getVal(i - 1, j)*T->getVal(i - 1, j) +
-                         kdydx->getVal(i, j)*T->getVal(i + 1, j) +
-                         kdxdy->getVal(i, j - 1)*T->getVal(i, j - 1) +
-                         kdxdy->getVal(i, j)*T->getVal(i, j + 1) +
-                         Q_gen->getVal(i, j))/denom->getVal(i, j));
+        T(i, j) = (kdydx(i - 1, j) * T(i - 1, j) + kdydx(i, j) * T(i + 1, j) +
+                   kdxdy(i, j - 1) * T(i, j - 1) + kdxdy(i, j) * T(i, j + 1) +
+                   Q_gen(i, j)) / denom(i, j);
 
     // Successive over-relaxation
-    *T *= omega;
-    *T += (*T_old)*(1 - omega);
+    T *= omega;
+    T += T_old * (1 - omega);
 
     // Convergence criterion
     double dif = 0;
     max_dif = 0;
     for (int j = 0; j < ny + 1; j++) {
       for (int i = 0; i < nx + 1; i++) {
-        dif = T->getVal(i, j) - T_old->getVal(i, j);
-        if (dif > max_dif) max_dif = dif;
+        dif = T(i, j) - T_old(i, j);
+        if (dif > max_dif)
+          max_dif = dif;
       }
     }
   }
 
-  // Cleanup
-  delete kdydx, kdxdy, denom, Q_gen, T_old;
-
   std::cout << "Number of iterations: " << it << std::endl;
-  T->print(3, 0);
+  T.print(3, 0);
 }
 
 int main(int argc, char** argv) {
@@ -155,37 +134,32 @@ int main(int argc, char** argv) {
   double dy = Ly / ny;  // y-direction interval
   double A = dx * dy;   // Area of spatial region
 
-  Array *xx, *yy, *k, *Q_fwd, *Q_adj;
-
   // x-direction nodes [m]
-  xx = new Array(nx + 1, 1);
+  Array x(nx + 1, 1);
   for (int i = 0; i < nx + 1; i++)
-    xx->setVal(i, 0, i * dx);
+    x(i) = i * dx;
 
   // y-direction nodes [m]
-  yy = new Array(1, ny + 1);
+  Array y(1, ny + 1);
   for (int j = 0; j < ny + 1; j++)
-    yy->setVal(0, j, j * dy);
+    y(j) = j * dy;
 
   // Thermal conductivity [W/m-K]
   double k0 = 100;
-  k = new Array(nx, ny);
-  k->fill(k0);
+  Array k(nx, ny);
+  k.fill(k0);
 
   // Volumetric heat source [W/m^3]
   double Q0_fwd = 100000;  // Linear heat source [W/m]
-  Q_fwd = new Array(nx, ny);
-  Q_fwd->setVal(nx * 3 / 4, ny / 4, Q0_fwd / A);
+  Array Q_fwd(nx, ny);
+  Q_fwd(nx * 3 / 4, ny / 4) =  Q0_fwd / A;
 
   // Volumetric adjoint source [-]
   double Q0_adj = 1;  // Linear adjoint source [m^2]
-  Q_adj = new Array(nx, ny);
-  Q_adj->setVal(nx / 4, ny * 3 / 4, Q0_adj / A);
+  Array Q_adj(nx, ny);
+  Q_adj(nx / 4, ny * 3 / 4) = Q0_adj / A;
 
-  solve_fourier_2D(xx, yy, k, Q_fwd);
-
-  // Cleanup
-  delete k, Q_fwd, Q_adj;
+  solve_fourier_2D(x, y, k, Q_fwd);
 
   return 0;
 }

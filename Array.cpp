@@ -6,121 +6,156 @@ Array::Array(int cols, int rows) {
   nx = cols;
   ny = rows;
   n = nx * ny;
-  data = new double[n];
-  fill((double)0);
+  data.assign(n, 0);
 }
 
-// Destructor
-Array::~Array() { delete[] data; }
-
-// Addition operator for two arrays
-Array* Array::operator+(Array* other) {
-  assert(nx == other->nx && ny == other->ny);
-  Array* result;
-  result = new Array(nx, ny);
-  for (int j = 0; j < ny; j++)
-    for (int i = 0; i < nx; i++)
-      result->data[j*nx + i] = data[j*nx + i] + other->data[j*nx + i];
+// Arithmetic operators for two arrays
+Array Array::operator+(const Array& other) const {
+  assert(nx == other.nx && ny == other.ny);
+  Array result(nx, ny);
+  std::transform(data.begin(), data.end(), other.data.begin(),
+                 result.data.begin(), std::plus<double>());
   return result;
 }
 
-// Multiplication operator for two arrays
-Array* Array::operator*(Array* other) {
-  assert(nx == other->nx && ny == other->ny);
-  Array* result;
-  result = new Array(nx, ny);
-  for (int j = 0; j < ny; j++)
-    for (int i = 0; i < nx; i++)
-      result->data[j*nx + i] = data[j*nx + i] * other->data[j*nx + i];
+Array Array::operator-(const Array& other) const {
+  assert(nx == other.nx && ny == other.ny);
+  Array result(nx, ny);
+  std::transform(data.begin(), data.end(), other.data.begin(),
+                 result.data.begin(), std::minus<double>());
   return result;
 }
 
-// Compound addition assignment operator for two arrays
-Array* Array::operator+=(Array* other) {
-  assert(nx == other->nx && ny == other->ny);
-  for (int j = 0; j < ny; j++)
-    for (int i = 0; i < nx; i++)
-      data[j*nx + i] += other->data[j*nx + i];
-}
-
-// Compound multiplication assignment operator for two arrays
-Array* Array::operator*=(Array* other) {
-  assert(nx == other->nx && ny == other->ny);
-  for (int j = 0; j < ny; j++)
-    for (int i = 0; i < nx; i++)
-      data[j*nx + i] *= other->data[j*nx + i];
-}
-
-// Addition operator for an array and a constant
-Array* Array::operator+(double constant) {
-  Array* result;
-  result = new Array(nx, ny);
-  for (int j = 0; j < ny; j++)
-    for (int i = 0; i < nx; i++)
-      result->data[j*nx + i] = data[j*nx + i] + constant;
+Array Array::operator*(const Array& other) const {
+  assert(nx == other.nx && ny == other.ny);
+  Array result(nx, ny);
+  std::transform(data.begin(), data.end(), other.data.begin(),
+                 result.data.begin(), std::multiplies<double>());
   return result;
 }
 
-// Multiplication operator for an array and a constant
-Array* Array::operator*(double constant) {
-  Array* result;
-  result = new Array(nx, ny);
-  for (int j = 0; j < ny; j++)
-    for (int i = 0; i < nx; i++)
-      result->data[j*nx + i] = data[j*nx + i] * constant;
+Array Array::operator/(const Array& other) const {
+  assert(nx == other.nx && ny == other.ny);
+  Array result(nx, ny);
+  std::transform(data.begin(), data.end(), other.data.begin(),
+                 result.data.begin(), std::divides<double>());
   return result;
 }
 
-// Compound addition assignment operator an array and a constant
-Array* Array::operator+=(double constant) {
-  for (int j = 0; j < ny; j++)
-    for (int i = 0; i < nx; i++)
-      data[j*nx + i] += constant;
+// Assignment operators for two arrays
+Array& Array::operator+=(const Array& other) {
+  assert(nx == other.nx && ny == other.ny);
+  std::transform(data.begin(), data.end(), other.data.begin(),
+                 data.begin(), std::plus<double>());
 }
 
-// Compound multiplication assignment operator an array and a constant
-Array* Array::operator*=(double constant) {
-  for (int j = 0; j < ny; j++)
-    for (int i = 0; i < nx; i++)
-      data[j*nx + i] *= constant;
+Array& Array::operator-=(const Array& other) {
+  assert(nx == other.nx && ny == other.ny);
+  std::transform(data.begin(), data.end(), other.data.begin(),
+                 data.begin(), std::minus<double>());
+}
+
+Array& Array::operator*=(const Array& other) {
+  assert(nx == other.nx && ny == other.ny);
+  std::transform(data.begin(), data.end(), other.data.begin(),
+                 data.begin(), std::multiplies<double>());
+}
+
+Array& Array::operator/=(const Array& other) {
+  assert(nx == other.nx && ny == other.ny);
+  std::transform(data.begin(), data.end(), other.data.begin(),
+                 data.begin(), std::divides<double>());
+}
+
+// Arithmetic operators for an array and a constant
+Array Array::operator+(const double& constant) const {
+  Array result(nx, ny);
+  std::transform(data.begin(), data.end(), result.data.begin(),
+                 bind2nd(std::plus<double>(), constant));
+  return result;
+}
+
+Array Array::operator-(const double& constant) const {
+  Array result(nx, ny);
+  std::transform(data.begin(), data.end(), result.data.begin(),
+                 bind2nd(std::minus<double>(), constant));
+  return result;
+}
+
+Array Array::operator*(const double& constant) const {
+  Array result(nx, ny);
+  std::transform(data.begin(), data.end(), result.data.begin(),
+                 bind2nd(std::multiplies<double>(), constant));
+  return result;
+}
+
+Array Array::operator/(const double& constant) const {
+  Array result(nx, ny);
+  std::transform(data.begin(), data.end(), result.data.begin(),
+                 bind2nd(std::divides<double>(), constant));
+  return result;
+}
+
+// Assignment operators for an array and a constant
+Array& Array::operator+=(const double& constant) {
+  std::transform(data.begin(), data.end(), data.begin(),
+                 bind2nd(std::plus<double>(), constant));
+}
+
+Array& Array::operator-=(const double& constant) {
+  std::transform(data.begin(), data.end(), data.begin(),
+                 bind2nd(std::minus<double>(), constant));
+}
+
+Array& Array::operator*=(const double& constant) {
+  std::transform(data.begin(), data.end(), data.begin(),
+                 bind2nd(std::multiplies<double>(), constant));
+}
+
+Array& Array::operator/=(const double& constant) {
+  std::transform(data.begin(), data.end(), data.begin(),
+                 bind2nd(std::divides<double>(), constant));
 }
 
 // Fill an array with data copied from another
-void Array::fill(Array* other) {
-  assert(nx == other->nx && ny == other->ny);
-  for (int j = 0; j < ny; j++)
-    for (int i = 0; i < nx; i++)
-      data[j*nx + i] = other->data[j*nx + i];
+Array& Array::fill(const Array& other) {
+  assert(nx == other.nx && ny == other.ny);
+  data.assign(other.data.begin(), other.data.end());
 }
 
 // Fill an array with a constant value
-void Array::fill(double constant) {
-  for (int j = 0; j < ny; j++)
-    for (int i = 0; i < nx; i++)
-      data[j*nx + i] = constant;
+Array& Array::fill(const double& constant) {
+  data.assign(n, constant);
 }
 
-void Array::setVal(int i, int j, double val) {
+// Data access
+double& Array::operator()(const int& i, const int& j) {
   assert(i >= 0 && i < nx && j >= 0 && j < ny);
-  data[j*nx + i] = val;
+  return data[j * nx + i];
 }
 
-double Array::getVal(int i, int j) {
+const double& Array::operator()(const int& i, const int& j) const {
   assert(i >= 0 && i < nx && j >= 0 && j < ny);
-  return data[j*nx + i];
+  return data[j * nx + i];
 }
 
-double Array::getVal(int k) {
+// Data access (1D)
+double& Array::operator()(const int& k) {
+  assert((nx == 1 || ny == 1) && k < n);
+  return data[k];
+}
+
+const double& Array::operator()(const int& k) const {
   assert((nx == 1 || ny == 1) && k < n);
   return data[k];
 }
 
 void Array::print(int characters, int decimals) {
+  std::string format_string = "%" + std::to_string(characters) +
+                              "." + std::to_string(decimals) + "f ";
   for (int j = 0; j < ny; j++) {
-    std::string format_string = "%" + std::to_string(characters) +
-                                "." + std::to_string(decimals) + "f ";
     for (int i = 0; i < nx; i++) {
-      printf(format_string.c_str(), getVal(i, j));
+      printf(format_string.c_str(), (*this)(i, j));
     }
     std::cout << std::endl;
   }
