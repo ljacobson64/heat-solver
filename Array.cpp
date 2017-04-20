@@ -1,7 +1,8 @@
 #include "Array.hpp"
 
 // Constructor
-Array::Array(int cols, int rows) {
+template <class T>
+Array<T>::Array(int cols, int rows) {
   assert(cols > 0 && rows > 0);
   nx = cols;
   ny = rows;
@@ -10,147 +11,170 @@ Array::Array(int cols, int rows) {
 }
 
 // Arithmetic operators for two arrays
-Array Array::operator+(const Array& other) const {
+template <class T>
+Array<T> Array<T>::operator+(const Array<T>& other) const {
   assert(nx == other.nx && ny == other.ny);
-  Array result(nx, ny);
+  Array<T> result(nx, ny);
   std::transform(data.begin(), data.end(), other.data.begin(),
-                 result.data.begin(), std::plus<double>());
+                 result.data.begin(), std::plus<T>());
   return result;
 }
 
-Array Array::operator-(const Array& other) const {
+template <class T>
+Array<T> Array<T>::operator-(const Array<T>& other) const {
   assert(nx == other.nx && ny == other.ny);
-  Array result(nx, ny);
+  Array<T> result(nx, ny);
   std::transform(data.begin(), data.end(), other.data.begin(),
-                 result.data.begin(), std::minus<double>());
+                 result.data.begin(), std::minus<T>());
   return result;
 }
 
-Array Array::operator*(const Array& other) const {
+template <class T>
+Array<T> Array<T>::operator*(const Array<T>& other) const {
   assert(nx == other.nx && ny == other.ny);
-  Array result(nx, ny);
+  Array<T> result(nx, ny);
   std::transform(data.begin(), data.end(), other.data.begin(),
-                 result.data.begin(), std::multiplies<double>());
+                 result.data.begin(), std::multiplies<T>());
   return result;
 }
 
-Array Array::operator/(const Array& other) const {
+template <class T>
+Array<T> Array<T>::operator/(const Array<T>& other) const {
   assert(nx == other.nx && ny == other.ny);
-  Array result(nx, ny);
+  Array<T> result(nx, ny);
   std::transform(data.begin(), data.end(), other.data.begin(),
-                 result.data.begin(), std::divides<double>());
+                 result.data.begin(), std::divides<T>());
   return result;
 }
 
 // Assignment operators for two arrays
-Array& Array::operator+=(const Array& other) {
+template <class T>
+Array<T>& Array<T>::operator+=(const Array<T>& other) {
   assert(nx == other.nx && ny == other.ny);
   std::transform(data.begin(), data.end(), other.data.begin(),
-                 data.begin(), std::plus<double>());
+                 data.begin(), std::plus<T>());
 }
 
-Array& Array::operator-=(const Array& other) {
+template <class T>
+Array<T>& Array<T>::operator-=(const Array<T>& other) {
   assert(nx == other.nx && ny == other.ny);
   std::transform(data.begin(), data.end(), other.data.begin(),
-                 data.begin(), std::minus<double>());
+                 data.begin(), std::minus<T>());
 }
 
-Array& Array::operator*=(const Array& other) {
+template <class T>
+Array<T>& Array<T>::operator*=(const Array<T>& other) {
   assert(nx == other.nx && ny == other.ny);
   std::transform(data.begin(), data.end(), other.data.begin(),
-                 data.begin(), std::multiplies<double>());
+                 data.begin(), std::multiplies<T>());
 }
 
-Array& Array::operator/=(const Array& other) {
+template <class T>
+Array<T>& Array<T>::operator/=(const Array<T>& other) {
   assert(nx == other.nx && ny == other.ny);
   std::transform(data.begin(), data.end(), other.data.begin(),
-                 data.begin(), std::divides<double>());
+                 data.begin(), std::divides<T>());
 }
 
 // Arithmetic operators for an array and a constant
-Array Array::operator+(const double& constant) const {
-  Array result(nx, ny);
+template <class T>
+Array<T> Array<T>::operator+(const T& constant) const {
+  Array<T> result(nx, ny);
   std::transform(data.begin(), data.end(), result.data.begin(),
-                 bind2nd(std::plus<double>(), constant));
+                 bind2nd(std::plus<T>(), constant));
   return result;
 }
 
-Array Array::operator-(const double& constant) const {
-  Array result(nx, ny);
+template <class T>
+Array<T> Array<T>::operator-(const T& constant) const {
+  Array<T> result(nx, ny);
   std::transform(data.begin(), data.end(), result.data.begin(),
-                 bind2nd(std::minus<double>(), constant));
+                 bind2nd(std::minus<T>(), constant));
   return result;
 }
 
-Array Array::operator*(const double& constant) const {
-  Array result(nx, ny);
+template <class T>
+Array<T> Array<T>::operator*(const T& constant) const {
+  Array<T> result(nx, ny);
   std::transform(data.begin(), data.end(), result.data.begin(),
-                 bind2nd(std::multiplies<double>(), constant));
+                 bind2nd(std::multiplies<T>(), constant));
   return result;
 }
 
-Array Array::operator/(const double& constant) const {
-  Array result(nx, ny);
+template <class T>
+Array<T> Array<T>::operator/(const T& constant) const {
+  Array<T> result(nx, ny);
   std::transform(data.begin(), data.end(), result.data.begin(),
-                 bind2nd(std::divides<double>(), constant));
+                 bind2nd(std::divides<T>(), constant));
   return result;
 }
 
 // Assignment operators for an array and a constant
-Array& Array::operator+=(const double& constant) {
+template <class T>
+Array<T>& Array<T>::operator+=(const T& constant) {
   std::transform(data.begin(), data.end(), data.begin(),
-                 bind2nd(std::plus<double>(), constant));
+                 bind2nd(std::plus<T>(), constant));
 }
 
-Array& Array::operator-=(const double& constant) {
+template <class T>
+Array<T>& Array<T>::operator-=(const T& constant) {
   std::transform(data.begin(), data.end(), data.begin(),
-                 bind2nd(std::minus<double>(), constant));
+                 bind2nd(std::minus<T>(), constant));
 }
 
-Array& Array::operator*=(const double& constant) {
+template <class T>
+Array<T>& Array<T>::operator*=(const T& constant) {
   std::transform(data.begin(), data.end(), data.begin(),
-                 bind2nd(std::multiplies<double>(), constant));
+                 bind2nd(std::multiplies<T>(), constant));
 }
 
-Array& Array::operator/=(const double& constant) {
+template <class T>
+Array<T>& Array<T>::operator/=(const T& constant) {
   std::transform(data.begin(), data.end(), data.begin(),
-                 bind2nd(std::divides<double>(), constant));
+                 bind2nd(std::divides<T>(), constant));
 }
 
 // Fill an array with data copied from another
-Array& Array::fill(const Array& other) {
+template <class T>
+Array<T>& Array<T>::fill(const Array<T>& other) {
   assert(nx == other.nx && ny == other.ny);
   data.assign(other.data.begin(), other.data.end());
 }
 
 // Fill an array with a constant value
-Array& Array::fill(const double& constant) {
+template <class T>
+Array<T>& Array<T>::fill(const T& constant) {
   data.assign(n, constant);
 }
 
 // Data access
-double& Array::operator()(const int& i, const int& j) {
+template <class T>
+T& Array<T>::operator()(const int& i, const int& j) {
   assert(i >= 0 && i < nx && j >= 0 && j < ny);
   return data[j * nx + i];
 }
 
-const double& Array::operator()(const int& i, const int& j) const {
+template <class T>
+const T& Array<T>::operator()(const int& i, const int& j) const {
   assert(i >= 0 && i < nx && j >= 0 && j < ny);
   return data[j * nx + i];
 }
 
 // Data access (1D)
-double& Array::operator()(const int& k) {
+template <class T>
+T& Array<T>::operator()(const int& k) {
   assert((nx == 1 || ny == 1) && k < n);
   return data[k];
 }
 
-const double& Array::operator()(const int& k) const {
+template <class T>
+const T& Array<T>::operator()(const int& k) const {
   assert((nx == 1 || ny == 1) && k < n);
   return data[k];
 }
 
-void Array::print(int characters, int decimals) {
+template <class T>
+void Array<T>::print(int characters, int decimals) {
   std::string format_string = "%" + std::to_string(characters) +
                               "." + std::to_string(decimals) + "f ";
   for (int j = 0; j < ny; j++) {
@@ -161,3 +185,5 @@ void Array::print(int characters, int decimals) {
   }
   std::cout << std::endl;
 }
+
+template class Array<double>;
