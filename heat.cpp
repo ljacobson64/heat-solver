@@ -53,8 +53,8 @@ void solve_fourier_2D(Array<double> x, Array<double> y, Array<double> k,
   Array<double> denom(nx + 1, ny + 1);
   for (int i = 1; i < nx; i++)
     for (int j = 1; j < ny; j++)
-      denom(i, j) = kdydx(i - 1, j) + kdydx(i, j) + kdxdy(i, j - 1) +
-                    kdxdy(i, j);
+      denom(i, j) = kdydx(i - 1, j) + kdydx(i, j) +
+                    kdxdy(i, j - 1) + kdxdy(i, j);
 
   // Heat source
   Array<double> Q_gen(nx + 1, ny + 1);
@@ -62,14 +62,17 @@ void solve_fourier_2D(Array<double> x, Array<double> y, Array<double> k,
     for (int i = 1; i < nx; i++) {
       Q_gen(i, j) = 0.25 * (Q(i - 1, j - 1) * dx(i - 1) * dy(j - 1) +
                             Q(i - 1, j) * dx(i - 1) * dy(j) +
-                            Q(i, j - 1) * dx(i) * dy(j - 1) + Q(i, j) * dx(i) * dy(j));
+                            Q(i, j - 1) * dx(i) * dy(j - 1) +
+                            Q(i, j) * dx(i) * dy(j));
     }
-    Q_gen(0, j) = 0.25 * (Q(0, j - 1) * dx(0) * dy(j - 1) + Q(0, j) * dx(0) * dy(j));
+    Q_gen(0, j) = 0.25 * (Q(0, j - 1) * dx(0) * dy(j - 1) +
+                          Q(0, j) * dx(0) * dy(j));
     Q_gen(nx, j) = 0.25 * (Q(nx - 1, j - 1) * dx(nx - 1) * dy(j - 1) +
                            Q(nx - 1, j) * dx(nx - 1) * dy(j));
   }
   for (int i = 1; i < nx; i++) {
-    Q_gen(i, 0) = 0.25 * (Q(i - 1, 0) * dx(i - 1) * dy(0) + Q(i, 0) * dx(i) * dy(0));
+    Q_gen(i, 0) = 0.25 * (Q(i - 1, 0) * dx(i - 1) * dy(0) +
+                          Q(i, 0) * dx(i) * dy(0));
     Q_gen(i, ny) = 0.25 * (Q(i - 1, ny - 1) * dx(i - 1) * dy(ny - 1) +
                            Q(i, ny - 1) * dx(i) * dy(ny - 1));
   }
@@ -77,7 +80,6 @@ void solve_fourier_2D(Array<double> x, Array<double> y, Array<double> k,
   Q_gen(0, ny) = 0.25 * Q(0, ny - 1) * dx(0) * dy(ny - 1);
   Q_gen(nx, 0) = 0.25 * Q(nx - 1, 0) * dx(nx - 1) * dy(0);
   Q_gen(nx, ny) = 0.25 * Q(nx - 1, ny - 1) * dx(nx - 1) * dy(ny - 1);
-  //Q_gen->print(5, 0);
 
   Array<double> T(nx + 1, ny + 1);
   Array<double> T_old(nx + 1, ny + 1);
