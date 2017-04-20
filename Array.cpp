@@ -186,4 +186,34 @@ void Array<T>::print(int characters, int decimals) {
   std::cout << std::endl;
 }
 
+template <class T>
+void Array<T>::print(int characters, int decimals, const char* fname) {
+  std::string format_string = "%" + std::to_string(characters) +
+                              "." + std::to_string(decimals) + "f ";
+  FILE* outFile;
+  outFile = fopen(fname, "w");
+  for (int j = 0; j < ny; j++) {
+    for (int i = 0; i < nx; i++) {
+      fprintf(outFile, format_string.c_str(), (*this)(i, j));
+    }
+    fprintf(outFile, "\n");
+  }
+  fprintf(outFile, "\n");
+}
+
+template <class T>
+void Array<T>::printsci(int decimals, const char* fname) {
+  std::string format_string = "%" + std::to_string(decimals + 6) +
+                              "." + std::to_string(decimals) + "e ";
+  FILE* outFile;
+  outFile = fopen(fname, "w");
+  for (int j = 0; j < ny; j++) {
+    for (int i = 0; i < nx; i++) {
+      fprintf(outFile, format_string.c_str(), (*this)(i, j));
+    }
+    fprintf(outFile, "\n");
+  }
+  fprintf(outFile, "\n");
+}
+
 template class Array<double>;

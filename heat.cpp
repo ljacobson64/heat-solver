@@ -1,7 +1,9 @@
 #include "Array.hpp"
 
-void solve_fourier_2D(Array<double> x, Array<double> y, Array<double> k,
-                      Array<double> Q) {
+#include <math.h>
+
+void solve_fourier_2D(Array<double> x, Array<double> y,
+                      Array<double> k, Array<double> Q) {
 
   int nx = x.get_nx() - 1;
   int ny = y.get_ny() - 1;
@@ -87,7 +89,7 @@ void solve_fourier_2D(Array<double> x, Array<double> y, Array<double> k,
   int it = 0;
   double max_dif = 1e100;
 
-  double tol = 1e-6;
+  double tol = 1e-9;
   double omega = 1.6;
 
   while (max_dif > tol) {
@@ -112,7 +114,7 @@ void solve_fourier_2D(Array<double> x, Array<double> y, Array<double> k,
     max_dif = 0;
     for (int j = 0; j < ny + 1; j++) {
       for (int i = 0; i < nx + 1; i++) {
-        dif = T(i, j) - T_old(i, j);
+        dif = fabs(T(i, j) - T_old(i, j)) / T_old(i, j);
         if (dif > max_dif)
           max_dif = dif;
       }
@@ -120,15 +122,16 @@ void solve_fourier_2D(Array<double> x, Array<double> y, Array<double> k,
   }
 
   std::cout << "Number of iterations: " << it << std::endl;
-  T.print(3, 0);
+
+  T.printsci(4, "output.txt");
 }
 
 int main(int argc, char** argv) {
   // Parameters
-  double Lx = 1;  // Length in x-direction [m]
+  double Lx = 2;  // Length in x-direction [m]
   double Ly = 1;  // Length in x-direction [m]
-  int nx = 25;    // Number of spatial regions in x-direction
-  int ny = 25;    // Number of spatial regions in y-direction
+  int nx = 32;    // Number of spatial regions in x-direction
+  int ny = 16;    // Number of spatial regions in y-direction
 
   int n = nx * ny;      // Total number of spatial regions
   double dx = Lx / nx;  // x-direction interval
@@ -139,28 +142,42 @@ int main(int argc, char** argv) {
   Array<double> x(nx + 1, 1);
   for (int i = 0; i < nx + 1; i++)
     x(i) = i * dx;
+  //x.print(4, 0);
 
   // y-direction nodes [m]
   Array<double> y(1, ny + 1);
   for (int j = 0; j < ny + 1; j++)
     y(j) = j * dy;
+  //y.print(4, 0);
 
   // Thermal conductivity [W/m-K]
-  double k0 = 100;
+  double k0 = 1000;
+  double k1 = 10;
   Array<double> k(nx, ny);
   k.fill(k0);
+  for (int i = nx / 2; i < nx; i++)
+    for (int j = 3 * ny / 8; j < 5 * ny / 8; j++)
+      k(i, j) = k1;
+  //k.print(4, 0);
 
   // Volumetric heat source [W/m^3]
-  double Q0_fwd = 100000;  // Linear heat source [W/m]
+  double Q0_fwd = 1000000;  // Linear heat source [W/m]
   Array<double> Q_fwd(nx, ny);
-  Q_fwd(nx * 3 / 4, ny / 4) =  Q0_fwd / A;
+  //Q_fwd(nx * 3 / 4, ny / 4) = Q0_fwd / A;
+  for (int j = 0; j < ny; j++)
+    Q_fwd(0, j) = Q0_fwd / A;
+  //Q_fwd.print(4, 0);
 
   // Volumetric adjoint source [-]
   double Q0_adj = 1;  // Linear adjoint source [m^2]
   Array<double> Q_adj(nx, ny);
-  Q_adj(nx / 4, ny * 3 / 4) = Q0_adj / A;
+  //Q_adj(nx / 4, ny * 3 / 4) = Q0_adj / A;
+  Q_adj(nx - 1, ny / 2) = Q0_adj;
+  Q_adj(nx - 1, ny / 2 + 1) = Q0_adj;
+  //Q_adj.print(4, 0);
 
   solve_fourier_2D(x, y, k, Q_fwd);
+  solve_fourier_2D(x, y, k, Q_adj);
 
   return 0;
 }

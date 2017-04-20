@@ -50,6 +50,8 @@ class Array {
   const T& operator()(const int&) const;
 
   void print(int, int);
+  void print(int, int, const char*);
+  void printsci(int, const char*);
 
   int get_nx() {return nx;};
   int get_ny() {return ny;};

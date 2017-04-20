@@ -1,4 +1,5 @@
 *.o
 *.mw
 heat
+output.txt
 stuff/
