@@ -5,10 +5,15 @@
 
 void solve_fourier_2D(const Array<double> x, const Array<double> y,
                       const Array<double> k, const Array<double> Q,
-                      Array<double> T) {
+                      Array<double>* T) {
 
   int nx = x.get_nx() - 1;
   int ny = y.get_ny() - 1;
+
+  // Make sure input dimensions match
+  assert(k.get_nx() == nx && k.get_ny() == ny);
+  assert(Q.get_nx() == nx && Q.get_ny() == ny);
+  assert(T->get_nx() == nx + 1 && T->get_ny() == ny + 1);
 
   // dx: x-direction mesh; 1D; on intervals
   Array<double> dx(nx, 1);
@@ -25,7 +30,6 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
   for (int j = 1; j < ny; j++)
     for (int i = 0; i < nx; i++)  // Internal
       kdy(i, j) = 0.5 * (k(i, j - 1) * dy(j - 1) + k(i, j) * dy(j));
-
   for (int i = 0; i < nx; i++) {  // Bottom, top
     kdy(i, 0) = 0.5 * k(i, 0) * dy(0);
     kdy(i, ny) = 0.5 * k(i, ny - 1) * dy(ny - 1);
@@ -98,25 +102,27 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
     it++;
 
     // Old temperature values
-    T_old.fill(T);
+    T_old.fill(*T);
 
     // Internal nodes
     for (int j = 1; j < ny; j++)
       for (int i = 1; i < nx; i++)
-        T(i, j) = (kdydx(i - 1, j) * T(i - 1, j) + kdydx(i, j) * T(i + 1, j) +
-                   kdxdy(i, j - 1) * T(i, j - 1) + kdxdy(i, j) * T(i, j + 1) +
-                   Q_gen(i, j)) / denom(i, j);
+        (*T)(i, j) = (kdydx(i - 1, j) * (*T)(i - 1, j) +
+                      kdydx(i, j) * (*T)(i + 1, j) +
+                      kdxdy(i, j - 1) * (*T)(i, j - 1) +
+                      kdxdy(i, j) * (*T)(i, j + 1) +
+                      Q_gen(i, j)) / denom(i, j);
 
     // Successive over-relaxation
-    T *= omega;
-    T += T_old * (1 - omega);
+    *T *= omega;
+    *T += T_old * (1 - omega);
 
     // Convergence criterion
     double dif = 0;
     max_dif = 0;
     for (int j = 0; j < ny + 1; j++) {
       for (int i = 0; i < nx + 1; i++) {
-        dif = fabs(T(i, j) - T_old(i, j)) / T_old(i, j);
+        dif = fabs((*T)(i, j) - T_old(i, j)) / T_old(i, j);
         if (dif > max_dif)
           max_dif = dif;
       }
@@ -125,8 +131,6 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
 
   std::cout << "Number of iterations: " << it <<
             ", difference: " << max_dif << std::endl;
-
-  T.printsci(4, "output.txt");
 }
 
 int main(int argc, char** argv) {
@@ -179,16 +183,20 @@ int main(int argc, char** argv) {
   Q_adj(nx - 1, ny / 2 + 1) = Q0_adj;
   //Q_adj.print(4, 0);
 
+  // Solve
   Array<double> T_fwd(nx + 1, ny + 1);
   Array<double> T_adj(nx + 1, ny + 1);
-
   std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-  solve_fourier_2D(x, y, k, Q_fwd, T_fwd);
-  solve_fourier_2D(x, y, k, Q_adj, T_adj);
+  solve_fourier_2D(x, y, k, Q_fwd, &T_fwd);
+  solve_fourier_2D(x, y, k, Q_adj, &T_adj);
   std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
   std::cout << "Elapsed time: "
             << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
             << " ms" << std::endl;
+
+  // Write forward and adjoing temperature to file
+  T_fwd.printsci(4, "T_fwd.txt");
+  T_adj.printsci(4, "T_adj.txt");
 
   return 0;
 }
