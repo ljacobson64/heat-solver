@@ -158,8 +158,8 @@ int main(int argc, char** argv) {
   //y.print(4, 0);
 
   // Thermal conductivity [W/m-K]
-  double k0 = 1000;
-  double k1 = 10;
+  double k0 = 100;
+  double k1 = 10000;
   Array<double> k(nx, ny);
   k.fill(k0);
   for (int i = nx / 2; i < nx; i++)
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
   // Volumetric heat source [W/m^3]
   double Q0_fwd = 1000000;  // Linear heat source [W/m]
   Array<double> Q_fwd(nx, ny);
-  //Q_fwd(nx * 3 / 4, ny / 4) = Q0_fwd / A;
+  //Q_fwd(nx * 3 / 4, ny * 3 / 4) = Q0_fwd / A;
   for (int j = 0; j < ny; j++)
     Q_fwd(0, j) = Q0_fwd / A;
   //Q_fwd.print(4, 0);
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
   // Volumetric adjoint source [-]
   double Q0_adj = 1;  // Linear adjoint source [m^2]
   Array<double> Q_adj(nx, ny);
-  //Q_adj(nx / 4, ny * 3 / 4) = Q0_adj / A;
+  //Q_adj(nx / 4, ny / 4) = Q0_adj / A;
   Q_adj(nx - 1, ny / 2) = Q0_adj;
   Q_adj(nx - 1, ny / 2 + 1) = Q0_adj;
   //Q_adj.print(4, 0);

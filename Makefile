@@ -3,7 +3,7 @@ CXXFLAGS = -O2
 
 ASTYLE_DIR = $$HOME/astyle
 
-all: clean build run
+all: clean build run plot
 
 build: clean
 	$(CXX) $(CXXFLAGS) -c Array.cpp
@@ -12,6 +12,9 @@ build: clean
 run:
 	./heat
 
+plot:
+	python plot.py
+
 format:
 	$(ASTYLE_DIR)/astyle --options=$(ASTYLE_DIR)/google.ini \
 	                     --verbose \
@@ -19,4 +22,4 @@ format:
 	                     *.cpp *.hpp
 
 clean:
-	rm -f *.o heat
+	rm -f *.o *.txt heat

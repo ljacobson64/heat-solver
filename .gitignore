@@ -1,5 +1,6 @@
-*.o
 *.mw
+*.o
+*.png
 *.txt
 heat
 stuff/
