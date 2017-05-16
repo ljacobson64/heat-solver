@@ -1,9 +1,11 @@
 #include "Array.hpp"
 
+#include <chrono>
 #include <math.h>
 
-void solve_fourier_2D(Array<double> x, Array<double> y,
-                      Array<double> k, Array<double> Q) {
+void solve_fourier_2D(const Array<double> x, const Array<double> y,
+                      const Array<double> k, const Array<double> Q,
+                      Array<double> T) {
 
   int nx = x.get_nx() - 1;
   int ny = y.get_ny() - 1;
@@ -83,16 +85,16 @@ void solve_fourier_2D(Array<double> x, Array<double> y,
   Q_gen(nx, 0) = 0.25 * Q(nx - 1, 0) * dx(nx - 1) * dy(0);
   Q_gen(nx, ny) = 0.25 * Q(nx - 1, ny - 1) * dx(nx - 1) * dy(ny - 1);
 
-  Array<double> T(nx + 1, ny + 1);
   Array<double> T_old(nx + 1, ny + 1);
 
   int it = 0;
   double max_dif = 1e100;
 
+  int max_it = 10000;
   double tol = 1e-9;
   double omega = 1.6;
 
-  while (max_dif > tol) {
+  while (max_dif > tol && it < max_it) {
     it++;
 
     // Old temperature values
@@ -121,7 +123,8 @@ void solve_fourier_2D(Array<double> x, Array<double> y,
     }
   }
 
-  std::cout << "Number of iterations: " << it << std::endl;
+  std::cout << "Number of iterations: " << it <<
+            ", difference: " << max_dif << std::endl;
 
   T.printsci(4, "output.txt");
 }
@@ -130,8 +133,8 @@ int main(int argc, char** argv) {
   // Parameters
   double Lx = 2;  // Length in x-direction [m]
   double Ly = 1;  // Length in x-direction [m]
-  int nx = 32;    // Number of spatial regions in x-direction
-  int ny = 16;    // Number of spatial regions in y-direction
+  int nx = 64;    // Number of spatial regions in x-direction
+  int ny = 32;    // Number of spatial regions in y-direction
 
   int n = nx * ny;      // Total number of spatial regions
   double dx = Lx / nx;  // x-direction interval
@@ -176,8 +179,16 @@ int main(int argc, char** argv) {
   Q_adj(nx - 1, ny / 2 + 1) = Q0_adj;
   //Q_adj.print(4, 0);
 
-  solve_fourier_2D(x, y, k, Q_fwd);
-  solve_fourier_2D(x, y, k, Q_adj);
+  Array<double> T_fwd(nx + 1, ny + 1);
+  Array<double> T_adj(nx + 1, ny + 1);
+
+  std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+  solve_fourier_2D(x, y, k, Q_fwd, T_fwd);
+  solve_fourier_2D(x, y, k, Q_adj, T_adj);
+  std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+  std::cout << "Elapsed time: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+            << " ms" << std::endl;
 
   return 0;
 }

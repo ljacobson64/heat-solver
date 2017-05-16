@@ -53,9 +53,9 @@ class Array {
   void print(int, int, const char*);
   void printsci(int, const char*);
 
-  int get_nx() {return nx;};
-  int get_ny() {return ny;};
-  int get_n() {return n;};
+  int get_nx() const {return nx;};
+  int get_ny() const {return ny;};
+  int get_n() const {return n;};
 
  private:
   int nx, ny, n;
