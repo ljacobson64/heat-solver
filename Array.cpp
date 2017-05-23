@@ -202,6 +202,19 @@ void Array<T>::print(int characters, int decimals, const char* fname) {
 }
 
 template <class T>
+void Array<T>::printsci(int decimals) {
+  std::string format_string = "%" + std::to_string(decimals + 6) +
+                              "." + std::to_string(decimals) + "e ";
+  for (int j = 0; j < ny; j++) {
+    for (int i = 0; i < nx; i++) {
+      printf(format_string.c_str(), (*this)(i, j));
+    }
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
+}
+
+template <class T>
 void Array<T>::printsci(int decimals, const char* fname) {
   std::string format_string = "%" + std::to_string(decimals + 6) +
                               "." + std::to_string(decimals) + "e ";

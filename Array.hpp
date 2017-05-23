@@ -51,6 +51,7 @@ class Array {
 
   void print(int, int);
   void print(int, int, const char*);
+  void printsci(int);
   void printsci(int, const char*);
 
   int get_nx() const {return nx;};

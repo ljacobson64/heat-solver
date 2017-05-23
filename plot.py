@@ -12,7 +12,7 @@ def main():
     data_adj = np.loadtxt('T_adj.txt')
 
     # Setup grid
-    Lx = 1
+    Lx = 2
     Ly = 1
     nx = data_fwd.shape[1] - 1
     ny = data_fwd.shape[0] - 1
