@@ -20,7 +20,7 @@ def main():
     y = np.linspace(0, Ly, ny + 1)
     xp, yp = np.meshgrid(x, y)
 
-    to_file = False
+    to_file = True
     combined = False
 
     if combined: fig = plt.figure(figsize=(24, 6))
@@ -34,7 +34,7 @@ def main():
     ax1.set_ylabel('y [m]')
     ax1.set_zlabel('Temperature [K]')
     ax1.set_title('Forward solution')
-    if to_file: plt.savefig('forward.png'); plt.close()
+    if to_file: plt.savefig('forward.png', dpi=300); plt.close()
 
     if combined: ax1 = fig.add_subplot(1, 3, 2, projection='3d')
     else: fig = plt.figure()
@@ -45,7 +45,7 @@ def main():
     ax2.set_ylabel('y [m]')
     ax2.set_zlabel('Adjoint temperature [m^3-K/W]')
     ax2.set_title('Adjoint solution')
-    if to_file: plt.savefig('adjoint.png'); plt.close()
+    if to_file: plt.savefig('adjoint.png', dpi=300); plt.close()
 
     if combined: ax1 = fig.add_subplot(1, 3, 3, projection='3d')
     else: fig = plt.figure()
@@ -56,7 +56,7 @@ def main():
     ax3.set_ylabel('y [m]')
     ax3.set_zlabel('Forward * adjoint')
     ax3.set_title('Contributon')
-    if to_file: plt.savefig('contributon.png'); plt.close()
+    if to_file: plt.savefig('contributon.png', dpi=300); plt.close()
 
     if not to_file: plt.show()
 
