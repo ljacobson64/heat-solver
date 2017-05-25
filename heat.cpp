@@ -122,8 +122,8 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
   int it = 0;
   double max_dif = 1e100;
 
-  int max_it = 100000;
-  double tol = 1e-9;
+  int max_it = 50000;
+  double tol = 1e-8;
   double omega = 1.6;
 
   while (max_dif > tol && it < max_it) {
@@ -215,13 +215,11 @@ int main(int argc, char** argv) {
   Array<double> x(nx + 1, 1);
   for (int i = 0; i < nx + 1; i++)
     x(i) = i * dx;
-  //x.print(4, 0);
 
   // y-direction nodes [m]
   Array<double> y(1, ny + 1);
   for (int j = 0; j < ny + 1; j++)
     y(j) = j * dy;
-  //y.print(4, 0);
 
   // Thermal conductivity [W/m-K]
   double k0 = 0.2;
@@ -231,29 +229,34 @@ int main(int argc, char** argv) {
   for (int i = nx / 2; i < nx; i++)
     for (int j = 3 * ny / 8; j < 5 * ny / 8; j++)
       k(i, j) = k1;
-  //k.print(4, 0);
 
   // Volumetric heat source [W/m^3]
-  double Q0_fwd = 1000;  // Linear heat source [W/m]
+  double Q0_fwd = 100;  // Linear heat source [W/m]
+  double mfp = 0.25;
   Array<double> Q_fwd(nx, ny);
-  //Q_fwd(nx * 3 / 4, ny * 3 / 4) = Q0_fwd / A;
-  for (int j = 0; j < ny; j++)
-    Q_fwd(0, j) = Q0_fwd / A;
-  //Q_fwd.print(4, 0);
+  for (int i = 0; i < nx; i++) {
+    double x_mid = 0.5 * (x(i) + x(i + 1));
+    double Q_val = Q0_fwd / A * exp(-x_mid / mfp);
+    for (int j = 0; j < ny; j++)
+      Q_fwd(i, j) = Q_val;
+  }
 
   // Volumetric adjoint source [-]
   double Q0_adj = 1;  // Linear adjoint source [m^2]
   Array<double> Q_adj(nx, ny);
   Q_adj(nx - 1, ny / 2) = Q0_adj / A;
   Q_adj(nx - 1, ny / 2 + 1) = Q0_adj / A;
-  //Q_adj.print(4, 0);
+
+  // Convection parameters
+  double h = 10;  // Heat transfer coefficient [W/m^2-K]
+  double T_inf = 0;  // Ambient temperature [K]
 
   // Solve
   Array<double> T_fwd(nx + 1, ny + 1);
   Array<double> T_adj(nx + 1, ny + 1);
   std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-  solve_fourier_2D(x, y, k, Q_fwd, 100, 0, &T_fwd);
-  solve_fourier_2D(x, y, k, Q_adj, 100, 0, &T_adj);
+  solve_fourier_2D(x, y, k, Q_fwd, h, T_inf, &T_fwd);
+  solve_fourier_2D(x, y, k, Q_adj, h, 0, &T_adj);
   std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
   std::cout << "Elapsed time: "
             << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()

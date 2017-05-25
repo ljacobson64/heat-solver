@@ -48,12 +48,8 @@ def main():
         if combined: ax = fig.add_subplot(1, num_plots, i, projection='3d')
         else: fig = plt.figure()
         ax = fig.gca(projection='3d')
-        if i in [0, 1, 2]:
-            xp = xp_int
-            yp = yp_int
-        elif i in [3, 4, 5]:
-            xp = xp_nod
-            yp = yp_nod
+        if   i in [0, 1, 2]: xp = xp_int; yp = yp_int
+        elif i in [3, 4, 5]: xp = xp_nod; yp = yp_nod
         ax.plot_surface(xp, yp, data[i], rstride = 1, cstride = 1,
                         linewidth = 0, cmap = cm.get_cmap('Spectral_r'))
         ax.set_xlim([-0.5*(Lmax - Lx), Lx + 0.5*(Lmax - Lx)])
