@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 def main():
+    to_file = True
+    combined = False
+
     # Load data from file
     data_fwd = np.loadtxt('T_fwd.txt')
     data_adj = np.loadtxt('T_adj.txt')
@@ -20,8 +23,7 @@ def main():
     y = np.linspace(0, Ly, ny + 1)
     xp, yp = np.meshgrid(x, y)
 
-    to_file = True
-    combined = False
+    Lmax = max(Lx, Ly)
 
     if combined: fig = plt.figure(figsize=(24, 6))
 
@@ -30,6 +32,8 @@ def main():
     ax1 = fig.gca(projection='3d')
     ax1.plot_surface(xp, yp, data_fwd, rstride = 1, cstride = 1,
                      linewidth = 0, cmap = cm.get_cmap('Spectral_r'))
+    ax1.set_ylim([-0.5*(Lmax - Lx), Lx + 0.5*(Lmax - Lx)])
+    ax1.set_ylim([-0.5*(Lmax - Ly), Ly + 0.5*(Lmax - Ly)])
     ax1.set_xlabel('x [m]')
     ax1.set_ylabel('y [m]')
     ax1.set_zlabel('Temperature [K]')
@@ -41,6 +45,8 @@ def main():
     ax2 = fig.gca(projection='3d')
     ax2.plot_surface(xp, yp, data_adj, rstride = 1, cstride = 1,
                      linewidth = 0, cmap = cm.get_cmap('Spectral_r'))
+    ax2.set_ylim([-0.5*(Lmax - Lx), Lx + 0.5*(Lmax - Lx)])
+    ax2.set_ylim([-0.5*(Lmax - Ly), Ly + 0.5*(Lmax - Ly)])
     ax2.set_xlabel('x [m]')
     ax2.set_ylabel('y [m]')
     ax2.set_zlabel('Adjoint temperature [m^3-K/W]')
@@ -52,6 +58,8 @@ def main():
     ax3 = fig.gca(projection='3d')
     ax3.plot_surface(xp, yp, data_fwd*data_adj, rstride = 1, cstride = 1,
                      linewidth = 0, cmap = cm.get_cmap('Spectral_r'))
+    ax3.set_ylim([-0.5*(Lmax - Lx), Lx + 0.5*(Lmax - Lx)])
+    ax3.set_ylim([-0.5*(Lmax - Ly), Ly + 0.5*(Lmax - Ly)])
     ax3.set_xlabel('x [m]')
     ax3.set_ylabel('y [m]')
     ax3.set_zlabel('Forward * adjoint')
