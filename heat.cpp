@@ -224,8 +224,8 @@ int main(int argc, char** argv) {
   //y.print(4, 0);
 
   // Thermal conductivity [W/m-K]
-  double k0 = 1000;
-  double k1 = 100000;
+  double k0 = 0.2;
+  double k1 = 400;
   Array<double> k(nx, ny);
   k.fill(k0);
   for (int i = nx / 2; i < nx; i++)
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
   //k.print(4, 0);
 
   // Volumetric heat source [W/m^3]
-  double Q0_fwd = 1000000;  // Linear heat source [W/m]
+  double Q0_fwd = 1000;  // Linear heat source [W/m]
   Array<double> Q_fwd(nx, ny);
   //Q_fwd(nx * 3 / 4, ny * 3 / 4) = Q0_fwd / A;
   for (int j = 0; j < ny; j++)
@@ -252,14 +252,17 @@ int main(int argc, char** argv) {
   Array<double> T_fwd(nx + 1, ny + 1);
   Array<double> T_adj(nx + 1, ny + 1);
   std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-  solve_fourier_2D(x, y, k, Q_fwd, 10000, 0, &T_fwd);
-  solve_fourier_2D(x, y, k, Q_adj, 10000, 0, &T_adj);
+  solve_fourier_2D(x, y, k, Q_fwd, 100, 0, &T_fwd);
+  solve_fourier_2D(x, y, k, Q_adj, 100, 0, &T_adj);
   std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
   std::cout << "Elapsed time: "
             << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
             << " ms" << std::endl;
 
-  // Write forward and adjoing temperature to file
+  // Write some arrays to file
+  k.printsci(4, "k.txt");
+  Q_fwd.printsci(4, "Q_fwd.txt");
+  Q_adj.printsci(4, "Q_adj.txt");
   T_fwd.printsci(4, "T_fwd.txt");
   T_adj.printsci(4, "T_adj.txt");
 
