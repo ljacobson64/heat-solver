@@ -15,17 +15,17 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
   assert(Q.get_nx() == nx && Q.get_ny() == ny);
   assert(T->get_nx() == nx + 1 && T->get_ny() == ny + 1);
 
-  // dx: x-direction mesh; 1D; on intervals
+  // dx: on intervals (1D)
   Array<double> dx(nx, 1);
   for (int i = 0; i < nx; i++)
     dx(i) = x(i + 1, 0) - x(i, 0);
 
-  // dy: y-direction mesh; 1D; on intervals
+  // dy: on intervals (1D)
   Array<double> dy(1, ny);
   for (int j = 0; j < ny; j++)
     dy(j) = y(0, j + 1) - y(0, j);
 
-  // kdy: k times y-direction mesh: 2D; on dx intervals
+  // kdy: on dx intervals
   Array<double> kdy(nx, ny + 1);
   for (int j = 1; j < ny; j++)
     for (int i = 0; i < nx; i++)  // Internal
@@ -35,7 +35,7 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
     kdy(i, ny) = 0.5 * k(i, ny - 1) * dy(ny - 1);
   }
 
-  // kdx: k times x-direction mesh: 2D; on dy intervals
+  // kdx: on dy intervals
   Array<double> kdx(nx + 1, ny);
   for (int j = 0; j < ny; j++)
     for (int i = 1; i < nx; i++)  // Internal
@@ -45,13 +45,13 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
     kdx(nx, j) = 0.5 * k(nx - 1, j) * dx(nx - 1);
   }
 
-  // kdy/dx
+  // kdy/dx: on dx intervals
   Array<double> kdydx(nx, ny + 1);
   for (int j = 0; j < ny + 1; j++)
     for (int i = 0; i < nx; i++)
       kdydx(i, j) = kdy(i, j) / dx(i);
 
-  // kdx/dy
+  // kdx/dy: on dy intervals
   Array<double> kdxdy(nx + 1, ny);
   for (int j = 0; j < ny; j++)
     for (int i = 0; i < nx + 1; i++)
@@ -60,49 +60,58 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
   // Denominator
   Array<double> denom(nx + 1, ny + 1);
   for (int j = 1; j < ny; j++) {
-    for (int i = 1; i < nx; i++)
+    for (int i = 1; i < nx; i++) {
+      // Internal nodes
       denom(i, j) = kdydx(i - 1, j) + kdydx(i, j) +
                     kdxdy(i, j - 1) + kdxdy(i, j);
+    }
+    // Left, right
     denom(0, j) = h * dy(j) + kdydx(0, j) +
                   kdxdy(0, j - 1) + kdxdy(0, j);
     denom(nx, j) = kdydx(nx - 1, j) + h * dy(j) +
                    kdxdy(nx, j - 1) + kdxdy(nx, j);
   }
   for (int i = 1; i < nx; i++) {
+    // Bottom, top
     denom(i, 0) = kdydx(i - 1, 0) + kdydx(i, 0) +
                   h * dx(i) + kdxdy(i, 0);
     denom(i, ny) = kdydx(i - 1, ny) + kdydx(i, ny) +
                    kdxdy(i, ny - 1) + h * dx(i);
   }
-  denom(0, 0) = 0.5 * (h * dy(0) + h * dx(0)) +
+  // Corners
+  denom(0, 0) = 0.5 * h * (dx(0) + dy(0)) +
                 kdydx(0, 0) + kdxdy(0, 0);
-  denom(nx, 0) = 0.5 * (h * dy(0) + h * dx(nx - 1)) +
+  denom(nx, 0) = 0.5 * h * (dx(nx - 1) + dy(0)) +
                  kdydx(nx - 1, 0) + kdxdy(nx, 0);
-  denom(0, ny) = 0.5 * (h * dy(ny - 1) + h * dx(0)) +
+  denom(0, ny) = 0.5 * h * (dx(0) + dy(ny - 1)) +
                  kdydx(0, ny) + kdxdy(0, ny - 1);
-  denom(nx, ny) = 0.5 * (h * dy(ny - 1) + h * dx(nx - 1)) +
+  denom(nx, ny) = 0.5 * h * (dx(nx - 1) + dy(ny - 1)) +
                   kdydx(nx - 1, ny) + kdxdy(nx, ny - 1);
 
   // Heat source
   Array<double> Q_gen(nx + 1, ny + 1);
   for (int j = 1; j < ny; j++) {
     for (int i = 1; i < nx; i++) {
+      // Internal nodes
       Q_gen(i, j) = 0.25 * (Q(i - 1, j - 1) * dx(i - 1) * dy(j - 1) +
                             Q(i - 1, j) * dx(i - 1) * dy(j) +
                             Q(i, j - 1) * dx(i) * dy(j - 1) +
                             Q(i, j) * dx(i) * dy(j));
     }
+    // Left, right
     Q_gen(0, j) = 0.25 * (Q(0, j - 1) * dx(0) * dy(j - 1) +
                           Q(0, j) * dx(0) * dy(j));
     Q_gen(nx, j) = 0.25 * (Q(nx - 1, j - 1) * dx(nx - 1) * dy(j - 1) +
                            Q(nx - 1, j) * dx(nx - 1) * dy(j));
   }
   for (int i = 1; i < nx; i++) {
+    // Bottom, top
     Q_gen(i, 0) = 0.25 * (Q(i - 1, 0) * dx(i - 1) * dy(0) +
                           Q(i, 0) * dx(i) * dy(0));
     Q_gen(i, ny) = 0.25 * (Q(i - 1, ny - 1) * dx(i - 1) * dy(ny - 1) +
                            Q(i, ny - 1) * dx(i) * dy(ny - 1));
   }
+  // Corners
   Q_gen(0, 0) = 0.25 * Q(0, 0) * dx(0) * dy(0);
   Q_gen(nx, 0) = 0.25 * Q(nx - 1, 0) * dx(nx - 1) * dy(0);
   Q_gen(0, ny) = 0.25 * Q(0, ny - 1) * dx(0) * dy(ny - 1);
@@ -235,9 +244,8 @@ int main(int argc, char** argv) {
   // Volumetric adjoint source [-]
   double Q0_adj = 1;  // Linear adjoint source [m^2]
   Array<double> Q_adj(nx, ny);
-  //Q_adj(nx / 4, ny / 4) = Q0_adj / A;
-  Q_adj(nx - 1, ny / 2) = Q0_adj;
-  Q_adj(nx - 1, ny / 2 + 1) = Q0_adj;
+  Q_adj(nx - 1, ny / 2) = Q0_adj / A;
+  Q_adj(nx - 1, ny / 2 + 1) = Q0_adj / A;
   //Q_adj.print(4, 0);
 
   // Solve
