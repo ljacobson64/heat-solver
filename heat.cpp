@@ -263,11 +263,11 @@ int main(int argc, char** argv) {
             << " ms" << std::endl;
 
   // Write some arrays to file
-  k.printsci(4, "k.txt");
-  Q_fwd.printsci(4, "Q_fwd.txt");
-  Q_adj.printsci(4, "Q_adj.txt");
-  T_fwd.printsci(4, "T_fwd.txt");
-  T_adj.printsci(4, "T_adj.txt");
+  k.printsci(4, "output/k.txt");
+  Q_fwd.printsci(4, "output/Q_fwd.txt");
+  Q_adj.printsci(4, "output/Q_adj.txt");
+  T_fwd.printsci(4, "output/T_fwd.txt");
+  T_adj.printsci(4, "output/T_adj.txt");
 
   return 0;
 }

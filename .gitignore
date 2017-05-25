@@ -1,6 +1,5 @@
-*.mw
 *.o
-*.png
-*.txt
+img
+output
+stuff
 heat
-stuff/

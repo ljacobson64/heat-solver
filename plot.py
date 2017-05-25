@@ -16,11 +16,11 @@ def main():
 
     # Load data from file
     data = []
-    data.append(np.loadtxt('k.txt'))
-    data.append(np.loadtxt('Q_fwd.txt'))
-    data.append(np.loadtxt('Q_adj.txt'))
-    data.append(np.loadtxt('T_fwd.txt'))
-    data.append(np.loadtxt('T_adj.txt'))
+    data.append(np.loadtxt('output/k.txt'))
+    data.append(np.loadtxt('output/Q_fwd.txt'))
+    data.append(np.loadtxt('output/Q_adj.txt'))
+    data.append(np.loadtxt('output/T_fwd.txt'))
+    data.append(np.loadtxt('output/T_adj.txt'))
     data.append(data[3] * data[4])
     num_plots = len(data)
 
