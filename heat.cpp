@@ -2,10 +2,12 @@
 
 #include <chrono>
 #include <math.h>
+#include <sys/stat.h>
 
 void solve_fourier_2D(const Array<double> x, const Array<double> y,
                       const Array<double> k, const Array<double> Q,
-                      double h, double T_inf, Array<double>* T) {
+                      double h, double T_inf, Array<double>* T,
+                      int max_it, double tol) {
 
   int nx = x.get_nx() - 1;
   int ny = y.get_ny() - 1;
@@ -121,9 +123,6 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
 
   int it = 0;
   double max_dif = 1e100;
-
-  int max_it = 50000;
-  double tol = 1e-8;
   double omega = 1.6;
 
   while (max_dif > tol && it < max_it) {
@@ -255,14 +254,15 @@ int main(int argc, char** argv) {
   Array<double> T_fwd(nx + 1, ny + 1);
   Array<double> T_adj(nx + 1, ny + 1);
   std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-  solve_fourier_2D(x, y, k, Q_fwd, h, T_inf, &T_fwd);
-  solve_fourier_2D(x, y, k, Q_adj, h, 0, &T_adj);
+  solve_fourier_2D(x, y, k, Q_fwd, h, T_inf, &T_fwd, 50000, 1.e-8);
+  solve_fourier_2D(x, y, k, Q_adj, h, 0, &T_adj, 50000, 1.e-8);
   std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
   std::cout << "Elapsed time: "
             << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
             << " ms" << std::endl;
 
   // Write some arrays to file
+  mkdir("output", 0775);
   k.printsci(4, "output/k.txt");
   Q_fwd.printsci(4, "output/Q_fwd.txt");
   Q_adj.printsci(4, "output/Q_adj.txt");
