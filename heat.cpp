@@ -1,6 +1,7 @@
 #include "Array.hpp"
 
 #include <chrono>
+
 #include <math.h>
 #include <sys/stat.h>
 
@@ -221,30 +222,16 @@ int main(int argc, char** argv) {
     y(j) = j * dy;
 
   // Thermal conductivity [W/m-K]
-  double k0 = 0.2;
-  double k1 = 400;
   Array<double> k(nx, ny);
-  k.fill(k0);
-  for (int i = nx / 2; i < nx; i++)
-    for (int j = 3 * ny / 8; j < 5 * ny / 8; j++)
-      k(i, j) = k1;
+  k.fill_from_file("input/k.txt");
 
   // Volumetric heat source [W/m^3]
-  double Q0_fwd = 100;  // Linear heat source [W/m]
-  double mfp = 0.25;
   Array<double> Q_fwd(nx, ny);
-  for (int i = 0; i < nx; i++) {
-    double x_mid = 0.5 * (x(i) + x(i + 1));
-    double Q_val = Q0_fwd / A * exp(-x_mid / mfp);
-    for (int j = 0; j < ny; j++)
-      Q_fwd(i, j) = Q_val;
-  }
+  Q_fwd.fill_from_file("input/Q_fwd.txt");
 
   // Volumetric adjoint source [-]
-  double Q0_adj = 1;  // Linear adjoint source [m^2]
   Array<double> Q_adj(nx, ny);
-  Q_adj(nx - 1, ny / 2) = Q0_adj / A;
-  Q_adj(nx - 1, ny / 2 + 1) = Q0_adj / A;
+  Q_adj.fill_from_file("input/Q_adj.txt");
 
   // Convection parameters
   double h = 10;  // Heat transfer coefficient [W/m^2-K]
@@ -253,13 +240,13 @@ int main(int argc, char** argv) {
   // Solve
   Array<double> T_fwd(nx + 1, ny + 1);
   Array<double> T_adj(nx + 1, ny + 1);
-  std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-  solve_fourier_2D(x, y, k, Q_fwd, h, T_inf, &T_fwd, 50000, 1.e-8);
-  solve_fourier_2D(x, y, k, Q_adj, h, 0, &T_adj, 50000, 1.e-8);
-  std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-  std::cout << "Elapsed time: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
-            << " ms" << std::endl;
+  std::chrono::high_resolution_clock::time_point t1, t2;
+  t1 = std::chrono::high_resolution_clock::now();
+  solve_fourier_2D(x, y, k, Q_fwd, h, T_inf, &T_fwd, 10000, 1.e-8);
+  solve_fourier_2D(x, y, k, Q_adj, h, 0, &T_adj, 10000, 1.e-8);
+  t2 = std::chrono::high_resolution_clock::now();
+  int elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+  std::cout << "Elapsed time: " << elapsed << " ms" << std::endl;
 
   // Write some arrays to file
   mkdir("output", 0775);

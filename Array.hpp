@@ -4,8 +4,22 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
-#include <stdio.h>
+#include <fstream>
+#include <sstream>
 #include <vector>
+
+#include "stdio.h"
+
+// Output color and formatting
+#define RESET "\x1B[0m"
+#define FRED(x) "\x1B[31m" x RESET
+#define FYEL(x) "\x1B[33m" x RESET
+#define BOLD(x) "\x1B[1m" x RESET
+
+void throw_error(const std::string);
+void throw_warning(const std::string);
+
+std::ifstream open_file(std::string);
 
 template <class T>
 class Array {
@@ -40,6 +54,7 @@ class Array {
   // Fill an array
   Array<T>& fill(const Array<T>&);
   Array<T>& fill(const T&);
+  Array<T>& fill_from_file(const char*);
 
   // Data access
   T& operator()(const int&, const int&);

@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -O2
 
-ASTYLE_DIR = $$HOME/astyle
+ASTYLE_DIR = /opt/astyle/3.0.1
 
 all: clean build run plot
 
@@ -16,10 +16,8 @@ plot:
 	python plot.py
 
 format:
-	$(ASTYLE_DIR)/astyle --options=$(ASTYLE_DIR)/google.ini \
-	                     --verbose \
-	                     --formatted \
-	                     *.cpp *.hpp
+	$(ASTYLE_DIR)/bin/astyle --options=$(ASTYLE_DIR)/file/google.ini \
+	                         --verbose --formatted *.cpp *.hpp
 
 clean:
 	rm -f *.o *.txt heat

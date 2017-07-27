@@ -1,5 +1,24 @@
 #include "Array.hpp"
 
+// Display an error message and exit
+void throw_error(const std::string msg) {
+  std::cerr << BOLD(FRED("ERROR: ")) << msg << std::endl;
+  exit(EXIT_FAILURE);
+}
+
+// Display a warning message
+void throw_warning(const std::string msg) {
+  std::cerr << BOLD(FYEL("WARNING: ")) << msg << std::endl;
+}
+
+// Open a file
+std::ifstream open_file(const std::string fname) {
+  std::ifstream infile(fname);
+  if (infile.fail())
+    throw_error(fname + " not found");
+  return infile;
+}
+
 // Constructor
 template <class T>
 Array<T>::Array(int cols, int rows) {
@@ -145,6 +164,38 @@ Array<T>& Array<T>::fill(const Array<T>& other) {
 template <class T>
 Array<T>& Array<T>::fill(const T& constant) {
   data.assign(n, constant);
+}
+
+// Fill an array with data read from file
+template <class T>
+Array<T>& Array<T>::fill_from_file(const char* fname) {
+  std::ifstream infile = open_file(fname);
+  std::string buffer;
+  T temp;
+  int i = 0, j = 0;
+  std::getline(infile, buffer);
+  while (!buffer.empty()) {
+    if (j == ny)
+      throw_error("Read " + std::to_string(j + 1) +
+                  " lines, expected " + std::to_string(ny));
+    std::stringstream iss(buffer);
+    i = 0;
+    while (iss >> temp) {
+      if (i == nx)
+        throw_error("Read " + std::to_string(i + 1) +
+                    " values on line, expected " + std::to_string(nx));
+      data[j * nx + i] = temp;
+      i++;
+    }
+    if (i < nx)
+      throw_error("Read " + std::to_string(i) +
+                  " values on line, expected " + std::to_string(nx));
+    std::getline(infile, buffer);
+    j++;
+  }
+  if (j < ny)
+    throw_error("Read " + std::to_string(j) +
+                " lines, expected " + std::to_string(ny));
 }
 
 // Data access
