@@ -168,7 +168,7 @@ Array<T>& Array<T>::fill(const T& constant) {
 
 // Fill an array with data read from file
 template <class T>
-Array<T>& Array<T>::fill_from_file(const char* fname) {
+Array<T>& Array<T>::fill_from_file(const std::string fname) {
   std::ifstream infile = open_file(fname);
   std::string buffer;
   T temp;
@@ -227,57 +227,53 @@ const T& Array<T>::operator()(const int& k) const {
 template <class T>
 void Array<T>::print(int characters, int decimals) {
   std::string format_string = "%" + std::to_string(characters) +
-                              "." + std::to_string(decimals) + "f ";
+                              "." + std::to_string(decimals) + "f";
   for (int j = 0; j < ny; j++) {
-    for (int i = 0; i < nx; i++) {
-      printf(format_string.c_str(), (*this)(i, j));
-    }
+    for (int i = 0; i < nx - 1; i++)
+      printf((format_string + " ").c_str(), (*this)(i, j));
+    printf(format_string.c_str(), (*this)(nx - 1, j));
     std::cout << std::endl;
   }
-  std::cout << std::endl;
 }
 
 template <class T>
-void Array<T>::print(int characters, int decimals, const char* fname) {
+void Array<T>::print(int characters, int decimals, const std::string fname) {
   std::string format_string = "%" + std::to_string(characters) +
-                              "." + std::to_string(decimals) + "f ";
+                              "." + std::to_string(decimals) + "f";
   FILE* outFile;
-  outFile = fopen(fname, "w");
+  outFile = fopen(fname.c_str(), "w");
   for (int j = 0; j < ny; j++) {
-    for (int i = 0; i < nx; i++) {
-      fprintf(outFile, format_string.c_str(), (*this)(i, j));
-    }
+    for (int i = 0; i < nx - 1; i++)
+      fprintf(outFile, (format_string + " ").c_str(), (*this)(i, j));
+    fprintf(outFile, format_string.c_str(), (*this)(nx - 1, j));
     fprintf(outFile, "\n");
   }
-  fprintf(outFile, "\n");
 }
 
 template <class T>
 void Array<T>::printsci(int decimals) {
   std::string format_string = "%" + std::to_string(decimals + 6) +
-                              "." + std::to_string(decimals) + "e ";
+                              "." + std::to_string(decimals) + "e";
   for (int j = 0; j < ny; j++) {
-    for (int i = 0; i < nx; i++) {
-      printf(format_string.c_str(), (*this)(i, j));
-    }
+    for (int i = 0; i < nx - 1; i++)
+      printf((format_string + " ").c_str(), (*this)(i, j));
+    printf(format_string.c_str(), (*this)(nx - 1, j));
     std::cout << std::endl;
   }
-  std::cout << std::endl;
 }
 
 template <class T>
-void Array<T>::printsci(int decimals, const char* fname) {
+void Array<T>::printsci(int decimals, const std::string fname) {
   std::string format_string = "%" + std::to_string(decimals + 6) +
-                              "." + std::to_string(decimals) + "e ";
+                              "." + std::to_string(decimals) + "e";
   FILE* outFile;
-  outFile = fopen(fname, "w");
+  outFile = fopen(fname.c_str(), "w");
   for (int j = 0; j < ny; j++) {
-    for (int i = 0; i < nx; i++) {
-      fprintf(outFile, format_string.c_str(), (*this)(i, j));
-    }
+    for (int i = 0; i < nx - 1; i++)
+      fprintf(outFile, (format_string + " ").c_str(), (*this)(i, j));
+    fprintf(outFile, format_string.c_str(), (*this)(nx - 1, j));
     fprintf(outFile, "\n");
   }
-  fprintf(outFile, "\n");
 }
 
 template class Array<double>;

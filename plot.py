@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import argparse
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,6 +8,15 @@ from matplotlib import colors, cm, rc
 from mpl_toolkits.mplot3d import Axes3D
 
 def main():
+    parser = argparse.ArgumentParser(description='Plot results from heat-solver')
+    parser.add_argument('-d', '--data_dir', type=str, default='data', help='location of i/o files')
+    args = parser.parse_args()
+    data_dir = args.data_dir
+
+    if not os.path.isdir(data_dir):
+        print 'ERROR: directory "' + data_dir + '" not found'
+        exit(-1)
+
     to_file = True
     combined = False
     dpi = 300
@@ -16,11 +26,11 @@ def main():
 
     # Load data from file
     data = []
-    data.append(np.loadtxt('output/k.txt'))
-    data.append(np.loadtxt('output/Q_fwd.txt'))
-    data.append(np.loadtxt('output/Q_adj.txt'))
-    data.append(np.loadtxt('output/T_fwd.txt'))
-    data.append(np.loadtxt('output/T_adj.txt'))
+    data.append(np.loadtxt(data_dir + '/k.txt'))
+    data.append(np.loadtxt(data_dir + '/Q_fwd.txt'))
+    data.append(np.loadtxt(data_dir + '/Q_adj.txt'))
+    data.append(np.loadtxt(data_dir + '/T_fwd.txt'))
+    data.append(np.loadtxt(data_dir + '/T_adj.txt'))
     data.append(data[3] * data[4])
     num_plots = len(data)
 
@@ -40,7 +50,7 @@ def main():
 
     Lmax = max(Lx, Ly)
 
-    if not os.path.isdir('img'): os.makedirs('img')
+    if not os.path.isdir('data'): os.makedirs('data')
 
     if combined: fig = plt.figure(figsize=(8*num_plots, 6))
 
@@ -67,27 +77,31 @@ def main():
         if i == 0:
             ax.set_title(r'Thermal conductivity')
             ax.set_zlabel(r'Thermal conductivity [W/m-K]')
-            if to_file: plt.savefig('img/k.png', dpi=dpi); plt.close()
+            fname = 'k.png'
         elif i == 1:
             ax.set_title(r'Heat source')
             ax.set_zlabel(r'Volumetric heat source [W/m^3]')
-            if to_file: plt.savefig('img/forward_source.png', dpi=dpi); plt.close()
+            fname = 'Q_fwd.png'
         elif i == 2:
             ax.set_title(r'Adjoint source')
             ax.set_zlabel(r'Volumetric adjoint source [-]')
-            if to_file: plt.savefig('img/adjoint_source.png', dpi=dpi); plt.close()
+            fname = 'Q_adj.png'
         elif i == 3:
             ax.set_title(r'Forward solution')
             ax.set_zlabel(r'Temperature [K]')
-            if to_file: plt.savefig('img/forward_soln.png', dpi=dpi); plt.close()
+            fname = 'T_fwd.png'
         elif i == 4:
             ax.set_title(r'Adjoint solution')
             ax.set_zlabel(r'Adjoint temperature $\left[\frac{\textup{m}^3\textup{-K}}{\textup{W}}\right]$')
-            if to_file: plt.savefig('img/adjoint_soln.png', dpi=dpi); plt.close()
+            fname = 'T_adj.png'
         elif i == 5:
             ax.set_title(r'Contributon')
             ax.set_zlabel(r'Forward $\times$ adjoint')
-            if to_file: plt.savefig('img/contributon.png', dpi=dpi); plt.close()
+            fname = 'Cont.png'
+        print fname
+        if to_file:
+            plt.savefig(data_dir + '/' + fname, dpi=dpi)
+            plt.close()
 
     if not to_file: plt.show()
 

@@ -1,9 +1,15 @@
 #include "Array.hpp"
 
 #include <chrono>
+#include <cstring>
 
 #include <math.h>
 #include <sys/stat.h>
+
+void print_usage() {
+  std::cout << "Usage: ./heat [-d <data_dir>]" << std::endl;
+  exit(EXIT_SUCCESS);
+}
 
 void solve_fourier_2D(const Array<double> x, const Array<double> y,
                       const Array<double> k, const Array<double> Q,
@@ -200,6 +206,19 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
 }
 
 int main(int argc, char** argv) {
+  // Parse arguments
+  std::string data_dir;
+  if (argc == 1) {
+    data_dir = "data";
+  } else if (argc == 3) {
+    if (std::strcmp(argv[1], "-d") == 0)
+      data_dir = argv[2];
+    else
+      print_usage();
+  } else {
+    print_usage();
+  }
+
   // Parameters
   double Lx = 2;  // Length in x-direction [m]
   double Ly = 1;  // Length in x-direction [m]
@@ -223,15 +242,15 @@ int main(int argc, char** argv) {
 
   // Thermal conductivity [W/m-K]
   Array<double> k(nx, ny);
-  k.fill_from_file("input/k.txt");
+  k.fill_from_file(data_dir + "/k.txt");
 
   // Volumetric heat source [W/m^3]
   Array<double> Q_fwd(nx, ny);
-  Q_fwd.fill_from_file("input/Q_fwd.txt");
+  Q_fwd.fill_from_file(data_dir + "/Q_fwd.txt");
 
   // Volumetric adjoint source [-]
   Array<double> Q_adj(nx, ny);
-  Q_adj.fill_from_file("input/Q_adj.txt");
+  Q_adj.fill_from_file(data_dir + "/Q_adj.txt");
 
   // Convection parameters
   double h = 10;  // Heat transfer coefficient [W/m^2-K]
@@ -249,12 +268,11 @@ int main(int argc, char** argv) {
   std::cout << "Elapsed time: " << elapsed << " ms" << std::endl;
 
   // Write some arrays to file
-  mkdir("output", 0775);
-  k.printsci(4, "output/k.txt");
-  Q_fwd.printsci(4, "output/Q_fwd.txt");
-  Q_adj.printsci(4, "output/Q_adj.txt");
-  T_fwd.printsci(4, "output/T_fwd.txt");
-  T_adj.printsci(4, "output/T_adj.txt");
+  //k.printsci(4, data_dir + "/k.txt");
+  //Q_fwd.printsci(4, data_dir + "/Q_fwd.txt");
+  //Q_adj.printsci(4, data_dir + "/Q_adj.txt");
+  T_fwd.printsci(4, data_dir + "/T_fwd.txt");
+  T_adj.printsci(4, data_dir + "/T_adj.txt");
 
   return 0;
 }

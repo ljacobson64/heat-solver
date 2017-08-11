@@ -54,7 +54,7 @@ class Array {
   // Fill an array
   Array<T>& fill(const Array<T>&);
   Array<T>& fill(const T&);
-  Array<T>& fill_from_file(const char*);
+  Array<T>& fill_from_file(const std::string);
 
   // Data access
   T& operator()(const int&, const int&);
@@ -65,9 +65,9 @@ class Array {
   const T& operator()(const int&) const;
 
   void print(int, int);
-  void print(int, int, const char*);
+  void print(int, int, const std::string);
   void printsci(int);
-  void printsci(int, const char*);
+  void printsci(int, const std::string);
 
   int get_nx() const {return nx;};
   int get_ny() const {return ny;};

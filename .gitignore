@@ -1,6 +1,3 @@
 *.o
-img
-input
-output
-stuff
+data
 heat
