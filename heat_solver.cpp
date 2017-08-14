@@ -11,6 +11,51 @@ void print_usage() {
   exit(EXIT_SUCCESS);
 }
 
+void read_params_from_file(const std::string fname, double& Lx, double& Ly,
+                           int& nx, int& ny) {
+  std::ifstream infile = open_file(fname);
+  std::string buffer;
+
+  // Length in x-direction [m]
+  try {
+    std::getline(infile, buffer);
+    Lx = std::stod(buffer);
+    if (Lx <= 0)
+      throw 1;
+  } catch (...) {
+    throw_error("Lx = " + buffer + ", must be a positive number");
+  }
+  // Length in y-direction [m]
+  try {
+    std::getline(infile, buffer);
+    Ly = std::stod(buffer);
+    if (Ly <= 0)
+      throw 1;
+  } catch (...) {
+    throw_error("Ly = " + buffer + ", must be a positive number");
+  }
+  // Number of spatial regions in x-direction
+  try {
+    std::getline(infile, buffer);
+    nx = std::stoi(buffer);
+    if (nx <= 0 || std::stod(buffer) != (double)nx)
+      throw 1;
+  } catch (...) {
+    throw_error("nx = " + buffer + ", must be a positive integer");
+  }
+  // Number of spatial regions in y-direction
+  try {
+    std::getline(infile, buffer);
+    ny = std::stoi(buffer);
+    if (ny <= 0 || std::stod(buffer) != (double)ny)
+      throw 1;
+  } catch (...) {
+    throw_error("ny = " + buffer + ", must be a positive integer");
+  }
+
+  infile.close();
+}
+
 void solve_fourier_2D(const Array<double> x, const Array<double> y,
                       const Array<double> k, const Array<double> Q,
                       double h, double T_inf, Array<double>* T,
@@ -220,10 +265,9 @@ int main(int argc, char** argv) {
   }
 
   // Parameters
-  double Lx = 2;  // Length in x-direction [m]
-  double Ly = 1;  // Length in x-direction [m]
-  int nx = 64;    // Number of spatial regions in x-direction
-  int ny = 32;    // Number of spatial regions in y-direction
+  double Lx, Ly;
+  int nx, ny;
+  read_params_from_file(data_dir + "/params.txt", Lx, Ly, nx, ny);
 
   int n = nx * ny;      // Total number of spatial regions
   double dx = Lx / nx;  // x-direction interval
