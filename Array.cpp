@@ -176,25 +176,27 @@ Array<T>& Array<T>::fill_from_file(const std::string fname) {
   std::getline(infile, buffer);
   while (!buffer.empty()) {
     if (j == ny)
-      throw_error("Read " + std::to_string(j + 1) +
+      throw_error("In file " + fname + ": read " + std::to_string(j + 1) +
                   " lines, expected " + std::to_string(ny));
     std::stringstream iss(buffer);
     i = 0;
     while (iss >> temp) {
       if (i == nx)
-        throw_error("Read " + std::to_string(i + 1) +
-                    " values on line, expected " + std::to_string(nx));
+        throw_error("In file " + fname + ": read " + std::to_string(i + 1) +
+                    " values on line " + std::to_string(j + 1) +
+                    ", expected " + std::to_string(nx));
       data[j * nx + i] = temp;
       i++;
     }
     if (i < nx)
-      throw_error("Read " + std::to_string(i) +
-                  " values on line, expected " + std::to_string(nx));
+      throw_error("In file " + fname + ": read " + std::to_string(i) +
+                  " values on line " + std::to_string(j + 1) +
+                  ", expected " + std::to_string(nx));
     std::getline(infile, buffer);
     j++;
   }
   if (j < ny)
-    throw_error("Read " + std::to_string(j) +
+    throw_error("In file " + fname + ": read " + std::to_string(j) +
                 " lines, expected " + std::to_string(ny));
 }
 
