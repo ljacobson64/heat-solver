@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 from matplotlib import colors, cm, rc
 from mpl_toolkits.mplot3d import Axes3D
 
+def throw_error(msg):
+    print '\x1B[1m\x1B[31mERROR:\x1B[0m\x1B[0m ' + msg
+    exit(-1)
+
 def main():
     parser = argparse.ArgumentParser(description='Plot results from heat-solver')
     parser.add_argument('-d', '--data_dir', type=str, default='data', help='location of i/o files')
@@ -14,8 +18,7 @@ def main():
     data_dir = args.data_dir
 
     if not os.path.isdir(data_dir):
-        print 'ERROR: directory "' + data_dir + '" not found'
-        exit(-1)
+        throw_error('directory "' + data_dir + '" not found')
 
     to_file = True
     combined = False
