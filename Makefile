@@ -7,10 +7,10 @@ all: clean build run plot
 
 build: clean
 	$(CXX) $(CXXFLAGS) -c Array.cpp
-	$(CXX) $(CXXFLAGS) heat.cpp Array.o -o heat
+	$(CXX) $(CXXFLAGS) heat_solver.cpp Array.o -o heat_solver
 
 run:
-	./heat
+	./heat_solver
 
 plot:
 	python plot.py
@@ -20,4 +20,4 @@ format:
 	                         --verbose --formatted *.cpp *.hpp
 
 clean:
-	rm -f *.o *.txt heat
+	rm -f *.o *.txt heat_solver
