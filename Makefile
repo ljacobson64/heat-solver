@@ -3,7 +3,7 @@ CXXFLAGS = -O2
 
 ASTYLE_DIR = /opt/astyle/3.0.1
 
-all: clean build run plot
+all: clean build
 
 build: clean
 	$(CXX) $(CXXFLAGS) -c Array.cpp

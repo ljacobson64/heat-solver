@@ -288,35 +288,27 @@ int main(int argc, char** argv) {
   Array<double> k(nx, ny);
   k.fill_from_file(data_dir + "/k.txt");
 
-  // Volumetric heat source [W/m^3]
-  Array<double> Q_fwd(nx, ny);
-  Q_fwd.fill_from_file(data_dir + "/Q_fwd.txt");
-
-  // Volumetric adjoint source [-]
-  Array<double> Q_adj(nx, ny);
-  Q_adj.fill_from_file(data_dir + "/Q_adj.txt");
+  // Volumetric source (forward: [W/m^3], adjoint: [-])
+  Array<double> Q(nx, ny);
+  Q.fill_from_file(data_dir + "/Q.txt");
 
   // Convection parameters
   double h = 10;  // Heat transfer coefficient [W/m^2-K]
   double T_inf = 0;  // Ambient temperature [K]
 
   // Solve
-  Array<double> T_fwd(nx + 1, ny + 1);
-  Array<double> T_adj(nx + 1, ny + 1);
+  Array<double> T(nx + 1, ny + 1);
   std::chrono::high_resolution_clock::time_point t1, t2;
   t1 = std::chrono::high_resolution_clock::now();
-  solve_fourier_2D(x, y, k, Q_fwd, h, T_inf, &T_fwd, 10000, 1.e-8);
-  solve_fourier_2D(x, y, k, Q_adj, h, 0, &T_adj, 10000, 1.e-8);
+  solve_fourier_2D(x, y, k, Q, h, T_inf, &T, 100000, 1.e-8);
   t2 = std::chrono::high_resolution_clock::now();
   int elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
   std::cout << "Elapsed time: " << elapsed << " ms" << std::endl;
 
   // Write some arrays to file
   //k.printsci(4, data_dir + "/k.txt");
-  //Q_fwd.printsci(4, data_dir + "/Q_fwd.txt");
-  //Q_adj.printsci(4, data_dir + "/Q_adj.txt");
-  T_fwd.printsci(4, data_dir + "/T_fwd.txt");
-  T_adj.printsci(4, data_dir + "/T_adj.txt");
+  //Q.printsci(4, data_dir + "/Q.txt");
+  T.printsci(4, data_dir + "/T.txt");
 
   return 0;
 }
