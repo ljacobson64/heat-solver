@@ -6,8 +6,7 @@ ASTYLE_DIR = /opt/astyle/3.0.1
 all: clean build
 
 build: clean
-	$(CXX) $(CXXFLAGS) -c Array.cpp
-	$(CXX) $(CXXFLAGS) heat_solver.cpp Array.o -o heat_solver
+	$(CXX) $(CXXFLAGS) heat_solver.cpp Array.cpp -o heat_solver
 
 run:
 	./heat_solver
