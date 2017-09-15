@@ -30,18 +30,15 @@ def main():
     # Load data from file
     data = []
     data.append(np.loadtxt(data_dir + '/k.txt'))
-    data.append(np.loadtxt(data_dir + '/Q_fwd.txt'))
-    data.append(np.loadtxt(data_dir + '/Q_adj.txt'))
-    data.append(np.loadtxt(data_dir + '/T_fwd.txt'))
-    data.append(np.loadtxt(data_dir + '/T_adj.txt'))
-    data.append(data[3] * data[4])
+    data.append(np.loadtxt(data_dir + '/Q.txt'))
+    data.append(np.loadtxt(data_dir + '/T.txt'))
     num_plots = len(data)
 
     # Setup grid
     Lx = 2
     Ly = 1
-    nx = data[3].shape[1] - 1
-    ny = data[3].shape[0] - 1
+    nx = data[2].shape[1] - 1
+    ny = data[2].shape[0] - 1
     dx = Lx / nx
     dy = Ly / ny
     x_int = np.linspace(0.5 * dx, Lx - 0.5 * dx, nx)
@@ -61,8 +58,8 @@ def main():
         if combined: ax = fig.add_subplot(1, num_plots, i, projection='3d')
         else: fig = plt.figure()
         ax = fig.gca(projection='3d')
-        if   i in [0, 1, 2]: xp = xp_int; yp = yp_int
-        elif i in [3, 4, 5]: xp = xp_nod; yp = yp_nod
+        if   i in [0, 1]: xp = xp_int; yp = yp_int
+        elif i in [2]: xp = xp_nod; yp = yp_nod
         ax.plot_surface(xp, yp, data[i], rstride = 1, cstride = 1,
                         linewidth = 0, cmap = cm.get_cmap('Spectral_r'))
         ax.set_xlim([-0.5*(Lmax - Lx), Lx + 0.5*(Lmax - Lx)])
@@ -86,21 +83,9 @@ def main():
             ax.set_zlabel(r'Volumetric heat source [W/m^3]')
             fname = 'Q_fwd.png'
         elif i == 2:
-            ax.set_title(r'Adjoint source')
-            ax.set_zlabel(r'Volumetric adjoint source [-]')
-            fname = 'Q_adj.png'
-        elif i == 3:
-            ax.set_title(r'Forward solution')
+            ax.set_title(r'Solution')
             ax.set_zlabel(r'Temperature [K]')
             fname = 'T_fwd.png'
-        elif i == 4:
-            ax.set_title(r'Adjoint solution')
-            ax.set_zlabel(r'Adjoint temperature $\left[\frac{\textup{m}^3\textup{-K}}{\textup{W}}\right]$')
-            fname = 'T_adj.png'
-        elif i == 5:
-            ax.set_title(r'Contributon')
-            ax.set_zlabel(r'Forward $\times$ adjoint')
-            fname = 'Cont.png'
         print fname
         if to_file:
             plt.savefig(data_dir + '/' + fname, dpi=dpi)
