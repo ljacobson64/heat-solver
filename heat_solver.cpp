@@ -1,4 +1,5 @@
 #include "Array.hpp"
+#include "BoundaryCond.hpp"
 
 #include <chrono>
 #include <cstring>
@@ -58,7 +59,7 @@ void read_params_from_file(const std::string fname, double& Lx, double& Ly,
 
 void solve_fourier_2D(const Array<double> x, const Array<double> y,
                       const Array<double> k, const Array<double> Q,
-                      double h, double T_inf, Array<double>* T,
+                      BoundaryConds BC, Array<double>* T,
                       int max_it, double tol) {
 
   int nx = x.get_nx() - 1;
@@ -120,27 +121,27 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
                     kdxdy(i, j - 1) + kdxdy(i, j);
     }
     // Left, right
-    denom(0, j) = h * dy(j) + kdydx(0, j) +
+    denom(0, j) = BC.left.get_h() * dy(j) + kdydx(0, j) +
                   kdxdy(0, j - 1) + kdxdy(0, j);
-    denom(nx, j) = kdydx(nx - 1, j) + h * dy(j) +
+    denom(nx, j) = kdydx(nx - 1, j) + BC.right.get_h() * dy(j) +
                    kdxdy(nx, j - 1) + kdxdy(nx, j);
   }
   for (int i = 1; i < nx; i++) {
     // Bottom, top
     denom(i, 0) = kdydx(i - 1, 0) + kdydx(i, 0) +
-                  h * dx(i) + kdxdy(i, 0);
+                  BC.bottom.get_h() * dx(i) + kdxdy(i, 0);
     denom(i, ny) = kdydx(i - 1, ny) + kdydx(i, ny) +
-                   kdxdy(i, ny - 1) + h * dx(i);
+                   kdxdy(i, ny - 1) + BC.top.get_h() * dx(i);
   }
   // Corners
-  denom(0, 0) = 0.5 * h * (dx(0) + dy(0)) +
-                kdydx(0, 0) + kdxdy(0, 0);
-  denom(nx, 0) = 0.5 * h * (dx(nx - 1) + dy(0)) +
-                 kdydx(nx - 1, 0) + kdxdy(nx, 0);
-  denom(0, ny) = 0.5 * h * (dx(0) + dy(ny - 1)) +
-                 kdydx(0, ny) + kdxdy(0, ny - 1);
-  denom(nx, ny) = 0.5 * h * (dx(nx - 1) + dy(ny - 1)) +
-                  kdydx(nx - 1, ny) + kdxdy(nx, ny - 1);
+  denom(0, 0) = 0.5 * BC.left.get_h() * dy(0) + kdydx(0, 0) +
+                0.5 * BC.bottom.get_h() * dx(0) + kdxdy(0, 0);
+  denom(nx, 0) = kdydx(nx - 1, 0) + 0.5 * BC.right.get_h() * dy(0) +
+                 0.5 * BC.bottom.get_h() * dx(nx - 1) + kdxdy(nx, 0);
+  denom(0, ny) = 0.5 * BC.left.get_h() * dy(ny - 1) + kdydx(0, ny) +
+                 kdxdy(0, ny - 1) + 0.5 * BC.top.get_h() * dx(0);
+  denom(nx, ny) = kdydx(nx - 1, ny) + 0.5 * BC.right.get_h() * dy(ny - 1) +
+                  kdxdy(nx, ny - 1) + 0.5 * BC.top.get_h() * dx(nx - 1);
 
   // Heat source
   Array<double> Q_gen(nx + 1, ny + 1);
@@ -183,26 +184,28 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
     // Old temperature values
     T_old.fill(*T);
 
-    (*T)(0, 0) = (0.5 * h * (dy(0) + dx(0)) * T_inf +
+    (*T)(0, 0) = (0.5 * BC.left.get_h() * BC.left.get_T_inf() * dy(0) +
                   kdydx(0, 0) * (*T)(1, 0) +
+                  0.5 * BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(0) +
                   kdxdy(0, 0) * (*T)(0, 1) +
                   Q_gen(0, 0)) / denom(0, 0);  // Bottom-left corner
     for (int i = 1; i < nx; i++)
       (*T)(i, 0) = (kdydx(i - 1, 0) * (*T)(i - 1, 0) +
                     kdydx(i, 0) * (*T)(i + 1, 0) +
-                    h * dx(i) * T_inf +
+                    BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(i) +
                     kdxdy(i, 0) * (*T)(i, 1) +
                     Q_gen(i, 0)) / denom(i, 0);  // Bottom boundary
-    (*T)(nx, 0) = (0.5 * (h * (dy(0) + dx(nx - 1)) * T_inf) +
-                   kdydx(nx - 1, 0) * (*T)(nx - 1, 0) +
+    (*T)(nx, 0) = (kdydx(nx - 1, 0) * (*T)(nx - 1, 0) +
+                   0.5 * BC.right.get_h() * BC.right.get_T_inf() * dy(0) +
+                   0.5 * BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(nx - 1) +
                    kdxdy(nx, 0) * (*T)(nx, 1) +
                    Q_gen(nx, 0)) / denom(nx, 0);  // Bottom-right corner
     for (int j = 1; j < ny; j++) {
-      (*T)(0, j) = (h * dy(j) * T_inf +
+      (*T)(0, j) = (BC.left.get_h() * BC.left.get_T_inf() * dy(j) +
                     kdydx(0, j) * (*T)(1, j) +
                     kdxdy(0, j - 1) * (*T)(0, j - 1) +
                     kdxdy(0, j) * (*T)(0, j + 1) +
-                    Q_gen(0, j)) / denom(0, j);  // Right boundary
+                    Q_gen(0, j)) / denom(0, j);  // Left boundary
       for (int i = 1; i < nx; i++)
         (*T)(i, j) = (kdydx(i - 1, j) * (*T)(i - 1, j) +
                       kdydx(i, j) * (*T)(i + 1, j) +
@@ -210,24 +213,26 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
                       kdxdy(i, j) * (*T)(i, j + 1) +
                       Q_gen(i, j)) / denom(i, j);  // Internal nodes
       (*T)(nx, j) = (kdydx(nx - 1, j) * (*T)(nx - 1, j) +
-                     h * dy(j) * T_inf +
+                     BC.right.get_h() * BC.right.get_T_inf() * dy(j) +
                      kdxdy(nx, j - 1) * (*T)(nx, j - 1) +
                      kdxdy(nx, j) * (*T)(nx, j + 1) +
                      Q_gen(nx, j)) / denom(nx, j);  // Right boundary
     }
-    (*T)(0, ny) = (0.5 * (h * (dy(ny - 1) + dx(0)) * T_inf) +
+    (*T)(0, ny) = (0.5 * BC.left.get_h() * BC.left.get_T_inf() * dy(ny - 1) +
                    kdydx(0, ny) * (*T)(0 + 1, ny) +
                    kdxdy(0, ny - 1) * (*T)(0, ny - 1) +
+                   0.5 * BC.top.get_h() * BC.top.get_T_inf() * dx(0) +
                    Q_gen(0, ny)) / denom(0, ny);  // Top-left corner
     for (int i = 1; i < nx; i++)
       (*T)(i, ny) = (kdydx(i - 1, ny) * (*T)(i - 1, ny) +
                      kdydx(i, ny) * (*T)(i + 1, ny) +
                      kdxdy(i, ny - 1) * (*T)(i, ny - 1) +
-                     h * dx(i) * T_inf +
+                     BC.top.get_h() * BC.top.get_T_inf() * dx(i) +
                      Q_gen(i, ny)) / denom(i, ny);  // Top boundary
-    (*T)(nx, ny) = (0.5 * (h * (dy(ny - 1) + dx(nx - 1)) * T_inf) +
-                    kdydx(nx - 1, ny) * (*T)(nx - 1, ny) +
+    (*T)(nx, ny) = (kdydx(nx - 1, ny) * (*T)(nx - 1, ny) +
+                    0.5 * BC.right.get_h() * BC.right.get_T_inf() * dy(ny - 1) +
                     kdxdy(nx, ny - 1) * (*T)(nx, ny - 1) +
+                    0.5 * BC.top.get_h() * BC.top.get_T_inf() * dx(nx - 1) +
                     Q_gen(nx, ny)) / denom(nx, ny);  // Top-right corner
 
     // Successive over-relaxation
@@ -292,15 +297,18 @@ int main(int argc, char** argv) {
   Array<double> Q(nx, ny);
   Q.fill_from_file(data_dir + "/Q.txt");
 
-  // Convection parameters
-  double h = 10;  // Heat transfer coefficient [W/m^2-K]
-  double T_inf = 0;  // Ambient temperature [K]
+  // Boundary conditions
+  BoundaryConds BC;
+  BC.left.set_type(BC_CONVECTIVE, 10., 0.);
+  BC.right.set_type(BC_CONVECTIVE, 10., 0.);
+  BC.bottom.set_type(BC_CONVECTIVE, 10., 0.);
+  BC.top.set_type(BC_CONVECTIVE, 10., 0.);
 
   // Solve
   Array<double> T(nx + 1, ny + 1);
   std::chrono::high_resolution_clock::time_point t1, t2;
   t1 = std::chrono::high_resolution_clock::now();
-  solve_fourier_2D(x, y, k, Q, h, T_inf, &T, 100000, 1.e-8);
+  solve_fourier_2D(x, y, k, Q, BC, &T, 100000, 1.e-8);
   t2 = std::chrono::high_resolution_clock::now();
   int elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
   std::cout << "Elapsed time: " << elapsed << " ms" << std::endl;
