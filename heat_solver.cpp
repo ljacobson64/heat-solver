@@ -61,7 +61,7 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
 
   // Make sure input dimensions match
   assert(k.get_nx() == nx && k.get_ny() == ny);
-  assert(Q.get_nx() == nx && Q.get_ny() == ny);
+  assert(Q.get_nx() == nx + 1 && Q.get_ny() == ny + 1);
   assert(T->get_nx() == nx + 1 && T->get_ny() == ny + 1);
 
   // dx: on intervals (1D)
@@ -137,35 +137,6 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
   denom(nx, ny) = kdydx(nx - 1, ny) + 0.5 * BC.right.get_h() * dy(ny - 1) +
                   kdxdy(nx, ny - 1) + 0.5 * BC.top.get_h() * dx(nx - 1);
 
-  // Heat source
-  Array<double> Q_gen(nx + 1, ny + 1);
-  for (int j = 1; j < ny; j++) {
-    for (int i = 1; i < nx; i++) {
-      // Internal nodes
-      Q_gen(i, j) = 0.25 * (Q(i - 1, j - 1) * dx(i - 1) * dy(j - 1) +
-                            Q(i - 1, j) * dx(i - 1) * dy(j) +
-                            Q(i, j - 1) * dx(i) * dy(j - 1) +
-                            Q(i, j) * dx(i) * dy(j));
-    }
-    // Left, right
-    Q_gen(0, j) = 0.25 * (Q(0, j - 1) * dx(0) * dy(j - 1) +
-                          Q(0, j) * dx(0) * dy(j));
-    Q_gen(nx, j) = 0.25 * (Q(nx - 1, j - 1) * dx(nx - 1) * dy(j - 1) +
-                           Q(nx - 1, j) * dx(nx - 1) * dy(j));
-  }
-  for (int i = 1; i < nx; i++) {
-    // Bottom, top
-    Q_gen(i, 0) = 0.25 * (Q(i - 1, 0) * dx(i - 1) * dy(0) +
-                          Q(i, 0) * dx(i) * dy(0));
-    Q_gen(i, ny) = 0.25 * (Q(i - 1, ny - 1) * dx(i - 1) * dy(ny - 1) +
-                           Q(i, ny - 1) * dx(i) * dy(ny - 1));
-  }
-  // Corners
-  Q_gen(0, 0) = 0.25 * Q(0, 0) * dx(0) * dy(0);
-  Q_gen(nx, 0) = 0.25 * Q(nx - 1, 0) * dx(nx - 1) * dy(0);
-  Q_gen(0, ny) = 0.25 * Q(0, ny - 1) * dx(0) * dy(ny - 1);
-  Q_gen(nx, ny) = 0.25 * Q(nx - 1, ny - 1) * dx(nx - 1) * dy(ny - 1);
-
   Array<double> T_old(nx + 1, ny + 1);
 
   int it = 0;
@@ -182,52 +153,52 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
                   kdydx(0, 0) * (*T)(1, 0) +
                   0.5 * BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(0) +
                   kdxdy(0, 0) * (*T)(0, 1) +
-                  Q_gen(0, 0)) / denom(0, 0);  // Bottom-left corner
+                  Q(0, 0)) / denom(0, 0);  // Bottom-left corner
     for (int i = 1; i < nx; i++)
       (*T)(i, 0) = (kdydx(i - 1, 0) * (*T)(i - 1, 0) +
                     kdydx(i, 0) * (*T)(i + 1, 0) +
                     BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(i) +
                     kdxdy(i, 0) * (*T)(i, 1) +
-                    Q_gen(i, 0)) / denom(i, 0);  // Bottom boundary
+                    Q(i, 0)) / denom(i, 0);  // Bottom boundary
     (*T)(nx, 0) = (kdydx(nx - 1, 0) * (*T)(nx - 1, 0) +
                    0.5 * BC.right.get_h() * BC.right.get_T_inf() * dy(0) +
                    0.5 * BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(nx - 1) +
                    kdxdy(nx, 0) * (*T)(nx, 1) +
-                   Q_gen(nx, 0)) / denom(nx, 0);  // Bottom-right corner
+                   Q(nx, 0)) / denom(nx, 0);  // Bottom-right corner
     for (int j = 1; j < ny; j++) {
       (*T)(0, j) = (BC.left.get_h() * BC.left.get_T_inf() * dy(j) +
                     kdydx(0, j) * (*T)(1, j) +
                     kdxdy(0, j - 1) * (*T)(0, j - 1) +
                     kdxdy(0, j) * (*T)(0, j + 1) +
-                    Q_gen(0, j)) / denom(0, j);  // Left boundary
+                    Q(0, j)) / denom(0, j);  // Left boundary
       for (int i = 1; i < nx; i++)
         (*T)(i, j) = (kdydx(i - 1, j) * (*T)(i - 1, j) +
                       kdydx(i, j) * (*T)(i + 1, j) +
                       kdxdy(i, j - 1) * (*T)(i, j - 1) +
                       kdxdy(i, j) * (*T)(i, j + 1) +
-                      Q_gen(i, j)) / denom(i, j);  // Internal nodes
+                      Q(i, j)) / denom(i, j);  // Internal nodes
       (*T)(nx, j) = (kdydx(nx - 1, j) * (*T)(nx - 1, j) +
                      BC.right.get_h() * BC.right.get_T_inf() * dy(j) +
                      kdxdy(nx, j - 1) * (*T)(nx, j - 1) +
                      kdxdy(nx, j) * (*T)(nx, j + 1) +
-                     Q_gen(nx, j)) / denom(nx, j);  // Right boundary
+                     Q(nx, j)) / denom(nx, j);  // Right boundary
     }
     (*T)(0, ny) = (0.5 * BC.left.get_h() * BC.left.get_T_inf() * dy(ny - 1) +
                    kdydx(0, ny) * (*T)(0 + 1, ny) +
                    kdxdy(0, ny - 1) * (*T)(0, ny - 1) +
                    0.5 * BC.top.get_h() * BC.top.get_T_inf() * dx(0) +
-                   Q_gen(0, ny)) / denom(0, ny);  // Top-left corner
+                   Q(0, ny)) / denom(0, ny);  // Top-left corner
     for (int i = 1; i < nx; i++)
       (*T)(i, ny) = (kdydx(i - 1, ny) * (*T)(i - 1, ny) +
                      kdydx(i, ny) * (*T)(i + 1, ny) +
                      kdxdy(i, ny - 1) * (*T)(i, ny - 1) +
                      BC.top.get_h() * BC.top.get_T_inf() * dx(i) +
-                     Q_gen(i, ny)) / denom(i, ny);  // Top boundary
+                     Q(i, ny)) / denom(i, ny);  // Top boundary
     (*T)(nx, ny) = (kdydx(nx - 1, ny) * (*T)(nx - 1, ny) +
                     0.5 * BC.right.get_h() * BC.right.get_T_inf() * dy(ny - 1) +
                     kdxdy(nx, ny - 1) * (*T)(nx, ny - 1) +
                     0.5 * BC.top.get_h() * BC.top.get_T_inf() * dx(nx - 1) +
-                    Q_gen(nx, ny)) / denom(nx, ny);  // Top-right corner
+                    Q(nx, ny)) / denom(nx, ny);  // Top-right corner
 
     // Successive over-relaxation
     *T *= omega;
@@ -287,7 +258,7 @@ int main(int argc, char** argv) {
   k.fill_from_file(data_dir + "/k.txt");
 
   // Volumetric source (forward: [W/m^3], adjoint: [-])
-  Array<double> Q(nx, ny);
+  Array<double> Q(nx + 1, ny + 1);
   Q.fill_from_file(data_dir + "/Q.txt");
 
   // Boundary conditions
