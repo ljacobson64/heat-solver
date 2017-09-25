@@ -58,8 +58,8 @@ def main():
         if combined: ax = fig.add_subplot(1, num_plots, i, projection='3d')
         else: fig = plt.figure()
         ax = fig.gca(projection='3d')
-        if   i in [0, 1]: xp = xp_int; yp = yp_int
-        elif i in [2]: xp = xp_nod; yp = yp_nod
+        if   i in [0]: xp = xp_int; yp = yp_int
+        elif i in [1, 2]: xp = xp_nod; yp = yp_nod
         ax.plot_surface(xp, yp, data[i], rstride = 1, cstride = 1,
                         linewidth = 0, cmap = cm.get_cmap('Spectral_r'))
         ax.set_xlim([-0.5*(Lmax - Lx), Lx + 0.5*(Lmax - Lx)])
@@ -81,11 +81,11 @@ def main():
         elif i == 1:
             ax.set_title(r'Heat source')
             ax.set_zlabel(r'Volumetric heat source [W/m^3]')
-            fname = 'Q_fwd.png'
+            fname = 'Q.png'
         elif i == 2:
             ax.set_title(r'Solution')
             ax.set_zlabel(r'Temperature [K]')
-            fname = 'T_fwd.png'
+            fname = 'T.png'
         print fname
         if to_file:
             plt.savefig(data_dir + '/' + fname, dpi=dpi)
