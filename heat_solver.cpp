@@ -1,11 +1,6 @@
 #include "Array.hpp"
 #include "BoundaryCond.hpp"
-
-#include <chrono>
-#include <cstring>
-
-#include <math.h>
-#include <sys/stat.h>
+#include "Common.hpp"
 
 void print_usage() {
   std::cout << "Usage: ./heat [-d <data_dir>]" << std::endl;
@@ -61,7 +56,6 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
                       const Array<double> k, const Array<double> Q,
                       BoundaryConds BC, Array<double>* T,
                       int max_it, double tol) {
-
   int nx = x.get_nx() - 1;
   int ny = y.get_ny() - 1;
 
@@ -251,8 +245,7 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
     }
   }
 
-  std::cout << "Number of iterations: " << it <<
-            ", difference: " << max_dif << std::endl;
+  std::cout << "Number of iterations: " << it << ", difference: " << max_dif << std::endl;
 }
 
 int main(int argc, char** argv) {

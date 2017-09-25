@@ -1,6 +1,8 @@
 #ifndef BOUNDARYCOND_H
 #define BOUNDARYCOND_H
 
+#include "Common.hpp"
+
 #define BC_FIXED_TEMP 0
 #define BC_FIXED_FLUX 1
 #define BC_CONVECTIVE 2

@@ -8,7 +8,8 @@ all: clean build
 build: clean
 	$(CXX) $(CXXFLAGS) -c Array.cpp
 	$(CXX) $(CXXFLAGS) -c BoundaryCond.cpp
-	$(CXX) $(CXXFLAGS) heat_solver.cpp Array.o BoundaryCond.o -o heat_solver
+	$(CXX) $(CXXFLAGS) -c Common.cpp
+	$(CXX) $(CXXFLAGS) heat_solver.cpp Array.o BoundaryCond.o Common.o -o heat_solver
 
 run:
 	./heat_solver

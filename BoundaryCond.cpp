@@ -1,4 +1,5 @@
 #include "BoundaryCond.hpp"
+#include "Common.hpp"
 
 BoundaryCond::BoundaryCond() {
   type = BC_FIXED_TEMP;
