@@ -19,7 +19,7 @@ class BoundaryCond {
   double get_T_inf() const {return T_inf;};
   double get_h() const {return h;};
 
-  void set_type(int, double, double);
+  void set_type(int, double = 0., double = 0.);
 
  private:
   int type;

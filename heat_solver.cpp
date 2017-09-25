@@ -104,33 +104,51 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
   // Denominator
   Array<double> denom(nx + 1, ny + 1);
   for (int j = 1; j < ny; j++) {
+    // Internal nodes
     for (int i = 1; i < nx; i++) {
-      // Internal nodes
       denom(i, j) = kdydx(i - 1, j) + kdydx(i, j) +
                     kdxdy(i, j - 1) + kdxdy(i, j);
     }
-    // Left, right
-    denom(0, j) = BC.left.get_h() * dy(j) + kdydx(0, j) +
-                  kdxdy(0, j - 1) + kdxdy(0, j);
-    denom(nx, j) = kdydx(nx - 1, j) + BC.right.get_h() * dy(j) +
-                   kdxdy(nx, j - 1) + kdxdy(nx, j);
+    // Left
+    if (BC.left.get_type() == BC_FIXED_TEMP)
+      denom(0, j) = 0.;
+    else if (BC.left.get_type() == BC_CONVECTIVE)
+      denom(0, j) = BC.left.get_h() * dy(j) + kdydx(0, j) +
+                    kdxdy(0, j - 1) + kdxdy(0, j);
+    // Right
+    if (BC.right.get_type() == BC_FIXED_TEMP)
+      denom(nx, j) = 0.;
+    else if (BC.right.get_type() == BC_CONVECTIVE)
+      denom(nx, j) = kdydx(nx - 1, j) + BC.right.get_h() * dy(j) +
+                     kdxdy(nx, j - 1) + kdxdy(nx, j);
   }
   for (int i = 1; i < nx; i++) {
-    // Bottom, top
-    denom(i, 0) = kdydx(i - 1, 0) + kdydx(i, 0) +
-                  BC.bottom.get_h() * dx(i) + kdxdy(i, 0);
-    denom(i, ny) = kdydx(i - 1, ny) + kdydx(i, ny) +
-                   kdxdy(i, ny - 1) + BC.top.get_h() * dx(i);
+    // Bottom
+    if (BC.bottom.get_type() == BC_FIXED_TEMP)
+      denom(i, 0) = 0.;
+    else if (BC.bottom.get_type() == BC_CONVECTIVE)
+      denom(i, 0) = kdydx(i - 1, 0) + kdydx(i, 0) +
+                    BC.bottom.get_h() * dx(i) + kdxdy(i, 0);
+    // Top
+    if (BC.top.get_type() == BC_FIXED_TEMP)
+      denom(i, ny) = 0.;
+    else if (BC.top.get_type() == BC_CONVECTIVE)
+      denom(i, ny) = kdydx(i - 1, ny) + kdydx(i, ny) +
+                     kdxdy(i, ny - 1) + BC.top.get_h() * dx(i);
   }
   // Corners
-  denom(0, 0) = 0.5 * BC.left.get_h() * dy(0) + kdydx(0, 0) +
-                0.5 * BC.bottom.get_h() * dx(0) + kdxdy(0, 0);
-  denom(nx, 0) = kdydx(nx - 1, 0) + 0.5 * BC.right.get_h() * dy(0) +
-                 0.5 * BC.bottom.get_h() * dx(nx - 1) + kdxdy(nx, 0);
-  denom(0, ny) = 0.5 * BC.left.get_h() * dy(ny - 1) + kdydx(0, ny) +
-                 kdxdy(0, ny - 1) + 0.5 * BC.top.get_h() * dx(0);
-  denom(nx, ny) = kdydx(nx - 1, ny) + 0.5 * BC.right.get_h() * dy(ny - 1) +
-                  kdxdy(nx, ny - 1) + 0.5 * BC.top.get_h() * dx(nx - 1);
+  if (BC.left.get_type() == BC_CONVECTIVE && BC.bottom.get_type() == BC_CONVECTIVE)
+    denom(0, 0) = 0.5 * BC.left.get_h() * dy(0) + kdydx(0, 0) +
+                  0.5 * BC.bottom.get_h() * dx(0) + kdxdy(0, 0);
+  if (BC.right.get_type() == BC_CONVECTIVE && BC.bottom.get_type() == BC_CONVECTIVE)
+    denom(nx, 0) = kdydx(nx - 1, 0) + 0.5 * BC.right.get_h() * dy(0) +
+                   0.5 * BC.bottom.get_h() * dx(nx - 1) + kdxdy(nx, 0);
+  if (BC.left.get_type() == BC_CONVECTIVE && BC.top.get_type() == BC_CONVECTIVE)
+    denom(0, ny) = 0.5 * BC.left.get_h() * dy(ny - 1) + kdydx(0, ny) +
+                   kdxdy(0, ny - 1) + 0.5 * BC.top.get_h() * dx(0);
+  if (BC.right.get_type() == BC_CONVECTIVE && BC.top.get_type() == BC_CONVECTIVE)
+    denom(nx, ny) = kdydx(nx - 1, ny) + 0.5 * BC.right.get_h() * dy(ny - 1) +
+                    kdxdy(nx, ny - 1) + 0.5 * BC.top.get_h() * dx(nx - 1);
 
   // Heat source
   Array<double> Q_gen(nx + 1, ny + 1);
@@ -159,62 +177,114 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
   double max_dif = 1e100;
   double omega = 1.6;
 
+  // Set fixed temperatures as appropriate
+  if (BC.left.get_type() == BC_FIXED_TEMP)
+    for (int j = 0; j < ny + 1; j++)
+      (*T)(0, j) = BC.left.get_T_fixed();
+  if (BC.right.get_type() == BC_FIXED_TEMP)
+    for (int j = 0; j < ny + 1; j++)
+      (*T)(nx, j) = BC.right.get_T_fixed();
+  if (BC.bottom.get_type() == BC_FIXED_TEMP)
+    for (int i = 0; i < nx + 1; i++)
+      (*T)(i, 0) = BC.bottom.get_T_fixed();
+  if (BC.top.get_type() == BC_FIXED_TEMP)
+    for (int i = 0; i < nx + 1; i++)
+      (*T)(i, ny) = BC.top.get_T_fixed();
+  // If adjacent sides have fixed temperatures, take the mean of them at the corner
+  if (BC.left.get_type() == BC_FIXED_TEMP && BC.bottom.get_type() == BC_FIXED_TEMP)
+    (*T)(0, 0) = 0.5 * (BC.left.get_T_fixed() + BC.bottom.get_T_fixed());
+  if (BC.right.get_type() == BC_FIXED_TEMP && BC.bottom.get_type() == BC_FIXED_TEMP)
+    (*T)(nx, 0) = 0.5 * (BC.right.get_T_fixed() + BC.bottom.get_T_fixed());
+  if (BC.left.get_type() == BC_FIXED_TEMP && BC.top.get_type() == BC_FIXED_TEMP)
+    (*T)(0, ny) = 0.5 * (BC.left.get_T_fixed() + BC.top.get_T_fixed());
+  if (BC.right.get_type() == BC_FIXED_TEMP && BC.top.get_type() == BC_FIXED_TEMP) {
+    (*T)(nx, ny) = 0.5 * (BC.right.get_T_fixed() + BC.top.get_T_fixed());
+  }
+
   while (max_dif > tol && it < max_it) {
     it++;
 
     // Old temperature values
     T_old.fill(*T);
 
-    (*T)(0, 0) = (0.5 * BC.left.get_h() * BC.left.get_T_inf() * dy(0) +
-                  kdydx(0, 0) * (*T)(1, 0) +
-                  0.5 * BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(0) +
-                  kdxdy(0, 0) * (*T)(0, 1) +
-                  Q(0, 0)) / denom(0, 0);  // Bottom-left corner
-    for (int i = 1; i < nx; i++)
-      (*T)(i, 0) = (kdydx(i - 1, 0) * (*T)(i - 1, 0) +
-                    kdydx(i, 0) * (*T)(i + 1, 0) +
-                    BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(i) +
-                    kdxdy(i, 0) * (*T)(i, 1) +
-                    Q(i, 0)) / denom(i, 0);  // Bottom boundary
-    (*T)(nx, 0) = (kdydx(nx - 1, 0) * (*T)(nx - 1, 0) +
-                   0.5 * BC.right.get_h() * BC.right.get_T_inf() * dy(0) +
-                   0.5 * BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(nx - 1) +
-                   kdxdy(nx, 0) * (*T)(nx, 1) +
-                   Q(nx, 0)) / denom(nx, 0);  // Bottom-right corner
+    // Bottom-left corner
+    if (BC.bottom.get_type() == BC_CONVECTIVE && BC.left.get_type() == BC_CONVECTIVE) {
+      (*T)(0, 0) = (0.5 * BC.left.get_h() * BC.left.get_T_inf() * dy(0) +
+                    kdydx(0, 0) * (*T)(1, 0) +
+                    0.5 * BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(0) +
+                    kdxdy(0, 0) * (*T)(0, 1) +
+                    Q_gen(0, 0)) / denom(0, 0);
+    }
+    // Bottom boundary
+    if (BC.bottom.get_type() == BC_CONVECTIVE) {
+      for (int i = 1; i < nx; i++) {
+        (*T)(i, 0) = (kdydx(i - 1, 0) * (*T)(i - 1, 0) +
+                      kdydx(i, 0) * (*T)(i + 1, 0) +
+                      BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(i) +
+                      kdxdy(i, 0) * (*T)(i, 1) +
+                      Q_gen(i, 0)) / denom(i, 0);
+      }
+    }
+    // Bottom-right corner
+    if (BC.bottom.get_type() == BC_CONVECTIVE && BC.right.get_type() == BC_CONVECTIVE) {
+      (*T)(nx, 0) = (kdydx(nx - 1, 0) * (*T)(nx - 1, 0) +
+                     0.5 * BC.right.get_h() * BC.right.get_T_inf() * dy(0) +
+                     0.5 * BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(nx - 1) +
+                     kdxdy(nx, 0) * (*T)(nx, 1) +
+                     Q_gen(nx, 0)) / denom(nx, 0);
+    }
     for (int j = 1; j < ny; j++) {
-      (*T)(0, j) = (BC.left.get_h() * BC.left.get_T_inf() * dy(j) +
-                    kdydx(0, j) * (*T)(1, j) +
-                    kdxdy(0, j - 1) * (*T)(0, j - 1) +
-                    kdxdy(0, j) * (*T)(0, j + 1) +
-                    Q(0, j)) / denom(0, j);  // Left boundary
-      for (int i = 1; i < nx; i++)
+      // Left boundary
+      if (BC.left.get_type() == BC_CONVECTIVE) {
+        (*T)(0, j) = (BC.left.get_h() * BC.left.get_T_inf() * dy(j) +
+                      kdydx(0, j) * (*T)(1, j) +
+                      kdxdy(0, j - 1) * (*T)(0, j - 1) +
+                      kdxdy(0, j) * (*T)(0, j + 1) +
+                      Q_gen(0, j)) / denom(0, j);
+      }
+      // Internal nodes
+      for (int i = 1; i < nx; i++) {
         (*T)(i, j) = (kdydx(i - 1, j) * (*T)(i - 1, j) +
                       kdydx(i, j) * (*T)(i + 1, j) +
                       kdxdy(i, j - 1) * (*T)(i, j - 1) +
                       kdxdy(i, j) * (*T)(i, j + 1) +
-                      Q(i, j)) / denom(i, j);  // Internal nodes
-      (*T)(nx, j) = (kdydx(nx - 1, j) * (*T)(nx - 1, j) +
-                     BC.right.get_h() * BC.right.get_T_inf() * dy(j) +
-                     kdxdy(nx, j - 1) * (*T)(nx, j - 1) +
-                     kdxdy(nx, j) * (*T)(nx, j + 1) +
-                     Q(nx, j)) / denom(nx, j);  // Right boundary
+                      Q_gen(i, j)) / denom(i, j);
+      }
+      // Right boundary
+      if (BC.right.get_type() == BC_CONVECTIVE) {
+        (*T)(nx, j) = (kdydx(nx - 1, j) * (*T)(nx - 1, j) +
+                       BC.right.get_h() * BC.right.get_T_inf() * dy(j) +
+                       kdxdy(nx, j - 1) * (*T)(nx, j - 1) +
+                       kdxdy(nx, j) * (*T)(nx, j + 1) +
+                       Q_gen(nx, j)) / denom(nx, j);
+      }
     }
-    (*T)(0, ny) = (0.5 * BC.left.get_h() * BC.left.get_T_inf() * dy(ny - 1) +
-                   kdydx(0, ny) * (*T)(0 + 1, ny) +
-                   kdxdy(0, ny - 1) * (*T)(0, ny - 1) +
-                   0.5 * BC.top.get_h() * BC.top.get_T_inf() * dx(0) +
-                   Q(0, ny)) / denom(0, ny);  // Top-left corner
-    for (int i = 1; i < nx; i++)
-      (*T)(i, ny) = (kdydx(i - 1, ny) * (*T)(i - 1, ny) +
-                     kdydx(i, ny) * (*T)(i + 1, ny) +
-                     kdxdy(i, ny - 1) * (*T)(i, ny - 1) +
-                     BC.top.get_h() * BC.top.get_T_inf() * dx(i) +
-                     Q(i, ny)) / denom(i, ny);  // Top boundary
-    (*T)(nx, ny) = (kdydx(nx - 1, ny) * (*T)(nx - 1, ny) +
-                    0.5 * BC.right.get_h() * BC.right.get_T_inf() * dy(ny - 1) +
-                    kdxdy(nx, ny - 1) * (*T)(nx, ny - 1) +
-                    0.5 * BC.top.get_h() * BC.top.get_T_inf() * dx(nx - 1) +
-                    Q(nx, ny)) / denom(nx, ny);  // Top-right corner
+    // Top-left corner
+    if (BC.top.get_type() == BC_CONVECTIVE && BC.left.get_type() == BC_CONVECTIVE) {
+      (*T)(0, ny) = (0.5 * BC.left.get_h() * BC.left.get_T_inf() * dy(ny - 1) +
+                     kdydx(0, ny) * (*T)(0 + 1, ny) +
+                     kdxdy(0, ny - 1) * (*T)(0, ny - 1) +
+                     0.5 * BC.top.get_h() * BC.top.get_T_inf() * dx(0) +
+                     Q_gen(0, ny)) / denom(0, ny);
+    }
+    // Top boundary
+    if (BC.top.get_type() == BC_CONVECTIVE) {
+      for (int i = 1; i < nx; i++) {
+        (*T)(i, ny) = (kdydx(i - 1, ny) * (*T)(i - 1, ny) +
+                       kdydx(i, ny) * (*T)(i + 1, ny) +
+                       kdxdy(i, ny - 1) * (*T)(i, ny - 1) +
+                       BC.top.get_h() * BC.top.get_T_inf() * dx(i) +
+                       Q_gen(i, ny)) / denom(i, ny);
+      }
+    }
+    // Top-right corner
+    if (BC.top.get_type() == BC_CONVECTIVE && BC.right.get_type() == BC_CONVECTIVE) {
+      (*T)(nx, ny) = (kdydx(nx - 1, ny) * (*T)(nx - 1, ny) +
+                      0.5 * BC.right.get_h() * BC.right.get_T_inf() * dy(ny - 1) +
+                      kdxdy(nx, ny - 1) * (*T)(nx, ny - 1) +
+                      0.5 * BC.top.get_h() * BC.top.get_T_inf() * dx(nx - 1) +
+                      Q_gen(nx, ny)) / denom(nx, ny);
+    }
 
     // Successive over-relaxation
     *T *= omega;
@@ -283,6 +353,10 @@ int main(int argc, char** argv) {
   BC.right.set_type(BC_CONVECTIVE, 10., 0.);
   BC.bottom.set_type(BC_CONVECTIVE, 10., 0.);
   BC.top.set_type(BC_CONVECTIVE, 10., 0.);
+  //BC.left.set_type(BC_FIXED_TEMP, 2000.);
+  //BC.right.set_type(BC_FIXED_TEMP, 2000.);
+  //BC.bottom.set_type(BC_FIXED_TEMP, 2000.);
+  //BC.top.set_type(BC_FIXED_TEMP, 2000.);
 
   // Solve
   Array<double> T(nx + 1, ny + 1);

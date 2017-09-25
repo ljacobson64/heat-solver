@@ -9,13 +9,17 @@ BoundaryCond::BoundaryCond() {
   h = 0.;
 }
 
-void BoundaryCond::set_type(int type, double p1, double p2 = 0.) {
-  if (type == BC_FIXED_TEMP)
+void BoundaryCond::set_type(int t, double p1, double p2) {
+  type = t;
+  if (t == BC_FIXED_TEMP)
     T_fixed = p1;
-  else if (type == BC_FIXED_FLUX)
+  else if (t == BC_FIXED_FLUX)
     q_fixed = p1;
-  else if (type == BC_CONVECTIVE) {
+  else if (t == BC_CONVECTIVE) {
     h = p1;
     T_inf = p2;
   }
+  else if (t == BC_ADIABATIC) {}
+  else
+    throw_error("Unsupported boundary condition");
 }
