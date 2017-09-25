@@ -3,23 +3,25 @@ CXXFLAGS = -O2
 
 ASTYLE_DIR = /opt/astyle/3.0.1
 
-all: clean build
+SOURCES = Array.cpp BoundaryCond.cpp Common.cpp heat_solver.cpp
+OBJECTS = $(SOURCES:.cpp=.o)
+EXECUTABLE = heat_solver
 
-build: clean
-	$(CXX) $(CXXFLAGS) -c Array.cpp
-	$(CXX) $(CXXFLAGS) -c BoundaryCond.cpp
-	$(CXX) $(CXXFLAGS) -c Common.cpp
-	$(CXX) $(CXXFLAGS) heat_solver.cpp Array.o BoundaryCond.o Common.o -o heat_solver
+build: realclean $(OBJECTS) $(EXECUTABLE)
+	make -s clean
 
-run:
-	./heat_solver
+.cpp.o:
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-plot:
-	python plot.py
+$(EXECUTABLE):
+	$(CXX) $(CXXFLAGS) $(OBJECTS) -o $@
+
+clean:
+	rm -f $(OBJECTS)
+
+realclean: clean
+	rm -f $(EXECUTABLE)
 
 format:
 	$(ASTYLE_DIR)/bin/astyle --options=$(ASTYLE_DIR)/file/google.ini \
 	                         --verbose --formatted *.cpp *.hpp
-
-clean:
-	rm -f *.o *.txt heat_solver
