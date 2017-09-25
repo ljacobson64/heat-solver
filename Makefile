@@ -5,7 +5,7 @@ ASTYLE_DIR = /opt/astyle/3.0.1
 
 SOURCES = Array.cpp BoundaryCond.cpp Common.cpp heat_solver.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
-EXECUTABLE = heat_solver
+EXECUTABLE = heat-solver
 
 build: realclean $(OBJECTS) $(EXECUTABLE)
 	make -s clean
