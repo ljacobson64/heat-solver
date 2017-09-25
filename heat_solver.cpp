@@ -59,11 +59,6 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
   int nx = x.get_nx() - 1;
   int ny = y.get_ny() - 1;
 
-  // Make sure input dimensions match
-  assert(k.get_nx() == nx && k.get_ny() == ny);
-  assert(Q.get_nx() == nx + 1 && Q.get_ny() == ny + 1);
-  assert(T->get_nx() == nx + 1 && T->get_ny() == ny + 1);
-
   // dx: on intervals (1D)
   Array<double> dx(nx, 1);
   for (int i = 0; i < nx; i++)
