@@ -157,19 +157,19 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
     for (int i = 1; i < nx; i++)
       Q_gen(i, j) = 0.25 * Q(i, j) * (dx(i - 1) + dx(i)) * (dy(j - 1) + dy(j));
     // Left, right
-    Q_gen(0, j) = 0.25 * Q(0, j) * dx(0) * (dy(j - 1) + dy(j));
-    Q_gen(nx, j) = 0.25 * Q(nx, j) * dx(nx - 1) * (dy(j - 1) + dy(j));
+    Q_gen(0, j) = 0.5 * Q(0, j) * dx(0) * (dy(j - 1) + dy(j));
+    Q_gen(nx, j) = 0.5 * Q(nx, j) * dx(nx - 1) * (dy(j - 1) + dy(j));
   }
   for (int i = 1; i < nx; i++) {
     // Bottom, top
-    Q_gen(i, 0) = 0.25 * Q(i, 0) * (dx(i - 1) + dx(i)) * dy(0);
-    Q_gen(i, ny) = 0.25 * Q(i, ny) * (dx(i - 1) + dx(i)) * dy(ny - 1);
+    Q_gen(i, 0) = 0.5 * Q(i, 0) * (dx(i - 1) + dx(i)) * dy(0);
+    Q_gen(i, ny) = 0.5 * Q(i, ny) * (dx(i - 1) + dx(i)) * dy(ny - 1);
   }
   // Corners
-  Q_gen(0, 0) = 0.25 * Q(0, 0) * dx(0) * dy(0);
-  Q_gen(nx, 0) = 0.25 * Q(nx - 1, 0) * dx(nx - 1) * dy(0);
-  Q_gen(0, ny) = 0.25 * Q(0, ny - 1) * dx(0) * dy(ny - 1);
-  Q_gen(nx, ny) = 0.25 * Q(nx - 1, ny - 1) * dx(nx - 1) * dy(ny - 1);
+  Q_gen(0, 0) = Q(0, 0) * dx(0) * dy(0);
+  Q_gen(nx, 0) = Q(nx, 0) * dx(nx - 1) * dy(0);
+  Q_gen(0, ny) = Q(0, ny) * dx(0) * dy(ny - 1);
+  Q_gen(nx, ny) = Q(nx, ny) * dx(nx - 1) * dy(ny - 1);
 
   Array<double> T_old(nx + 1, ny + 1);
 
