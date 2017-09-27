@@ -18,8 +18,7 @@ void BoundaryCond::set_type(int t, double p1, double p2) {
   else if (t == BC_CONVECTIVE) {
     h = p1;
     T_inf = p2;
-  }
-  else if (t == BC_ADIABATIC) {}
+  } else if (t == BC_ADIABATIC) {}
   else
     throw_error("Unsupported boundary condition");
 }
