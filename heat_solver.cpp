@@ -8,9 +8,9 @@ void print_usage() {
 }
 
 void read_params_from_file(const std::string fname, double& Lx, double& Ly,
-                           int& nx, int& ny) {
+                           int& nx, int& ny, BoundaryConds& BCs) {
   std::ifstream infile = open_file(fname);
-  std::string buffer;
+  std::string buffer, buffer2;
 
   // Length in x-direction [m]
   try {
@@ -19,7 +19,7 @@ void read_params_from_file(const std::string fname, double& Lx, double& Ly,
     if (Lx <= 0)
       throw 1;
   } catch (...) {
-    throw_error("Lx = " + buffer + ", must be a positive number");
+    throw_error("Invalid value for Lx. Expected positive number, received " + buffer);
   }
   // Length in y-direction [m]
   try {
@@ -28,7 +28,7 @@ void read_params_from_file(const std::string fname, double& Lx, double& Ly,
     if (Ly <= 0)
       throw 1;
   } catch (...) {
-    throw_error("Ly = " + buffer + ", must be a positive number");
+    throw_error("Invalid value for Ly. Expected positive number, received " + buffer);
   }
   // Number of spatial regions in x-direction
   try {
@@ -37,7 +37,7 @@ void read_params_from_file(const std::string fname, double& Lx, double& Ly,
     if (nx <= 0 || std::stod(buffer) != (double)nx)
       throw 1;
   } catch (...) {
-    throw_error("nx = " + buffer + ", must be a positive integer");
+    throw_error("Invalid value for nx. Expected positive integer, received " + buffer);
   }
   // Number of spatial regions in y-direction
   try {
@@ -46,7 +46,51 @@ void read_params_from_file(const std::string fname, double& Lx, double& Ly,
     if (ny <= 0 || std::stod(buffer) != (double)ny)
       throw 1;
   } catch (...) {
-    throw_error("ny = " + buffer + ", must be a positive integer");
+    throw_error("Invalid value for ny. Expected positive integer, received " + buffer);
+  }
+
+  // Expect blank line
+  std::getline(infile, buffer);
+  if (!buffer.empty())
+    throw_error("Expected blank line");
+
+  // Boundary conditions
+  BCs.resize(BC_SIDE_MAX - BC_SIDE_MIN + 1);
+  for (int i = BC_SIDE_MIN; i <= BC_SIDE_MAX; i++) {
+    std::getline(infile, buffer);
+    std::istringstream iss(buffer);
+    std::vector<std::string> tokens;
+    copy(std::istream_iterator<std::string>(iss),
+         std::istream_iterator<std::string>(),
+         std::back_inserter(tokens));
+
+    int num_tokens = tokens.size();
+    int type = -1;
+    if (num_tokens == 0) {
+      throw_error("No BC tokens found for side " + std::to_string(i));
+    } else {
+      try {
+        type = std::stoi(tokens[0]);
+        if (type < BC_TYPE_MIN || type > BC_TYPE_MAX || std::stod(tokens[0]) != (double)type)
+          throw 1;
+      } catch (...) {
+        throw_error("Invalid BC type for side " + std::to_string(i) +
+                    ". Expected integer between 0 and 3, received " + tokens[0]);
+      }
+    }
+
+    if (type == BC_ADIABATIC && num_tokens == 1) {
+      BCs[i].set_type(type);
+    } else if ((type == BC_FIXED_TEMP || type == BC_FIXED_FLUX) && num_tokens == 2) {
+      double p1 = std::stod(tokens[1]);
+      BCs[i].set_type(type, p1);
+    } else if (type == BC_CONVECTIVE && num_tokens == 3) {
+      double p1 = std::stod(tokens[1]);
+      double p2 = std::stod(tokens[2]);
+      BCs[i].set_type(type, p1, p2);
+    } else {
+      throw_error("Invalid number of BC tokens for side " + std::to_string(i));
+    }
   }
 
   infile.close();
@@ -54,7 +98,7 @@ void read_params_from_file(const std::string fname, double& Lx, double& Ly,
 
 void solve_fourier_2D(const Array<double> x, const Array<double> y,
                       const Array<double> k, const Array<double> Q,
-                      BoundaryConds BC, Array<double>* T,
+                      const BoundaryConds BCs, Array<double>* T,
                       int max_it, double tol) {
   int nx = x.get_nx() - 1;
   int ny = y.get_ny() - 1;
@@ -110,45 +154,45 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
                     kdxdy(i, j - 1) + kdxdy(i, j);
     }
     // Left
-    if (BC.left.get_type() == BC_FIXED_TEMP)
+    if (BCs[BC_LEFT].get_type() == BC_FIXED_TEMP)
       denom(0, j) = 0.;
-    else if (BC.left.get_type() == BC_CONVECTIVE)
-      denom(0, j) = BC.left.get_h() * dy(j) + kdydx(0, j) +
+    else if (BCs[BC_LEFT].get_type() == BC_CONVECTIVE)
+      denom(0, j) = BCs[BC_LEFT].get_h() * dy(j) + kdydx(0, j) +
                     kdxdy(0, j - 1) + kdxdy(0, j);
     // Right
-    if (BC.right.get_type() == BC_FIXED_TEMP)
+    if (BCs[BC_RIGHT].get_type() == BC_FIXED_TEMP)
       denom(nx, j) = 0.;
-    else if (BC.right.get_type() == BC_CONVECTIVE)
-      denom(nx, j) = kdydx(nx - 1, j) + BC.right.get_h() * dy(j) +
+    else if (BCs[BC_RIGHT].get_type() == BC_CONVECTIVE)
+      denom(nx, j) = kdydx(nx - 1, j) + BCs[BC_RIGHT].get_h() * dy(j) +
                      kdxdy(nx, j - 1) + kdxdy(nx, j);
   }
   for (int i = 1; i < nx; i++) {
     // Bottom
-    if (BC.bottom.get_type() == BC_FIXED_TEMP)
+    if (BCs[BC_BOTTOM].get_type() == BC_FIXED_TEMP)
       denom(i, 0) = 0.;
-    else if (BC.bottom.get_type() == BC_CONVECTIVE)
+    else if (BCs[BC_BOTTOM].get_type() == BC_CONVECTIVE)
       denom(i, 0) = kdydx(i - 1, 0) + kdydx(i, 0) +
-                    BC.bottom.get_h() * dx(i) + kdxdy(i, 0);
+                    BCs[BC_BOTTOM].get_h() * dx(i) + kdxdy(i, 0);
     // Top
-    if (BC.top.get_type() == BC_FIXED_TEMP)
+    if (BCs[BC_TOP].get_type() == BC_FIXED_TEMP)
       denom(i, ny) = 0.;
-    else if (BC.top.get_type() == BC_CONVECTIVE)
+    else if (BCs[BC_TOP].get_type() == BC_CONVECTIVE)
       denom(i, ny) = kdydx(i - 1, ny) + kdydx(i, ny) +
-                     kdxdy(i, ny - 1) + BC.top.get_h() * dx(i);
+                     kdxdy(i, ny - 1) + BCs[BC_TOP].get_h() * dx(i);
   }
   // Corners
-  if (BC.left.get_type() == BC_CONVECTIVE && BC.bottom.get_type() == BC_CONVECTIVE)
-    denom(0, 0) = 0.5 * BC.left.get_h() * dy(0) + kdydx(0, 0) +
-                  0.5 * BC.bottom.get_h() * dx(0) + kdxdy(0, 0);
-  if (BC.right.get_type() == BC_CONVECTIVE && BC.bottom.get_type() == BC_CONVECTIVE)
-    denom(nx, 0) = kdydx(nx - 1, 0) + 0.5 * BC.right.get_h() * dy(0) +
-                   0.5 * BC.bottom.get_h() * dx(nx - 1) + kdxdy(nx, 0);
-  if (BC.left.get_type() == BC_CONVECTIVE && BC.top.get_type() == BC_CONVECTIVE)
-    denom(0, ny) = 0.5 * BC.left.get_h() * dy(ny - 1) + kdydx(0, ny) +
-                   kdxdy(0, ny - 1) + 0.5 * BC.top.get_h() * dx(0);
-  if (BC.right.get_type() == BC_CONVECTIVE && BC.top.get_type() == BC_CONVECTIVE)
-    denom(nx, ny) = kdydx(nx - 1, ny) + 0.5 * BC.right.get_h() * dy(ny - 1) +
-                    kdxdy(nx, ny - 1) + 0.5 * BC.top.get_h() * dx(nx - 1);
+  if (BCs[BC_LEFT].get_type() == BC_CONVECTIVE && BCs[BC_BOTTOM].get_type() == BC_CONVECTIVE)
+    denom(0, 0) = 0.5 * BCs[BC_LEFT].get_h() * dy(0) + kdydx(0, 0) +
+                  0.5 * BCs[BC_BOTTOM].get_h() * dx(0) + kdxdy(0, 0);
+  if (BCs[BC_RIGHT].get_type() == BC_CONVECTIVE && BCs[BC_BOTTOM].get_type() == BC_CONVECTIVE)
+    denom(nx, 0) = kdydx(nx - 1, 0) + 0.5 * BCs[BC_RIGHT].get_h() * dy(0) +
+                   0.5 * BCs[BC_BOTTOM].get_h() * dx(nx - 1) + kdxdy(nx, 0);
+  if (BCs[BC_LEFT].get_type() == BC_CONVECTIVE && BCs[BC_TOP].get_type() == BC_CONVECTIVE)
+    denom(0, ny) = 0.5 * BCs[BC_LEFT].get_h() * dy(ny - 1) + kdydx(0, ny) +
+                   kdxdy(0, ny - 1) + 0.5 * BCs[BC_TOP].get_h() * dx(0);
+  if (BCs[BC_RIGHT].get_type() == BC_CONVECTIVE && BCs[BC_TOP].get_type() == BC_CONVECTIVE)
+    denom(nx, ny) = kdydx(nx - 1, ny) + 0.5 * BCs[BC_RIGHT].get_h() * dy(ny - 1) +
+                    kdxdy(nx, ny - 1) + 0.5 * BCs[BC_TOP].get_h() * dx(nx - 1);
 
   // Heat source
   Array<double> Q_gen(nx + 1, ny + 1);
@@ -178,28 +222,27 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
   double omega = 1.6;
 
   // Set fixed temperatures as appropriate
-  if (BC.left.get_type() == BC_FIXED_TEMP)
+  if (BCs[BC_LEFT].get_type() == BC_FIXED_TEMP)
     for (int j = 0; j < ny + 1; j++)
-      (*T)(0, j) = BC.left.get_T_fixed();
-  if (BC.right.get_type() == BC_FIXED_TEMP)
+      (*T)(0, j) = BCs[BC_LEFT].get_T_fixed();
+  if (BCs[BC_RIGHT].get_type() == BC_FIXED_TEMP)
     for (int j = 0; j < ny + 1; j++)
-      (*T)(nx, j) = BC.right.get_T_fixed();
-  if (BC.bottom.get_type() == BC_FIXED_TEMP)
+      (*T)(nx, j) = BCs[BC_RIGHT].get_T_fixed();
+  if (BCs[BC_BOTTOM].get_type() == BC_FIXED_TEMP)
     for (int i = 0; i < nx + 1; i++)
-      (*T)(i, 0) = BC.bottom.get_T_fixed();
-  if (BC.top.get_type() == BC_FIXED_TEMP)
+      (*T)(i, 0) = BCs[BC_BOTTOM].get_T_fixed();
+  if (BCs[BC_TOP].get_type() == BC_FIXED_TEMP)
     for (int i = 0; i < nx + 1; i++)
-      (*T)(i, ny) = BC.top.get_T_fixed();
+      (*T)(i, ny) = BCs[BC_TOP].get_T_fixed();
   // If adjacent sides have fixed temperatures, take the mean of them at the corner
-  if (BC.left.get_type() == BC_FIXED_TEMP && BC.bottom.get_type() == BC_FIXED_TEMP)
-    (*T)(0, 0) = 0.5 * (BC.left.get_T_fixed() + BC.bottom.get_T_fixed());
-  if (BC.right.get_type() == BC_FIXED_TEMP && BC.bottom.get_type() == BC_FIXED_TEMP)
-    (*T)(nx, 0) = 0.5 * (BC.right.get_T_fixed() + BC.bottom.get_T_fixed());
-  if (BC.left.get_type() == BC_FIXED_TEMP && BC.top.get_type() == BC_FIXED_TEMP)
-    (*T)(0, ny) = 0.5 * (BC.left.get_T_fixed() + BC.top.get_T_fixed());
-  if (BC.right.get_type() == BC_FIXED_TEMP && BC.top.get_type() == BC_FIXED_TEMP) {
-    (*T)(nx, ny) = 0.5 * (BC.right.get_T_fixed() + BC.top.get_T_fixed());
-  }
+  if (BCs[BC_LEFT].get_type() == BC_FIXED_TEMP && BCs[BC_BOTTOM].get_type() == BC_FIXED_TEMP)
+    (*T)(0, 0) = 0.5 * (BCs[BC_LEFT].get_T_fixed() + BCs[BC_BOTTOM].get_T_fixed());
+  if (BCs[BC_RIGHT].get_type() == BC_FIXED_TEMP && BCs[BC_BOTTOM].get_type() == BC_FIXED_TEMP)
+    (*T)(nx, 0) = 0.5 * (BCs[BC_RIGHT].get_T_fixed() + BCs[BC_BOTTOM].get_T_fixed());
+  if (BCs[BC_LEFT].get_type() == BC_FIXED_TEMP && BCs[BC_TOP].get_type() == BC_FIXED_TEMP)
+    (*T)(0, ny) = 0.5 * (BCs[BC_LEFT].get_T_fixed() + BCs[BC_TOP].get_T_fixed());
+  if (BCs[BC_RIGHT].get_type() == BC_FIXED_TEMP && BCs[BC_TOP].get_type() == BC_FIXED_TEMP)
+    (*T)(nx, ny) = 0.5 * (BCs[BC_RIGHT].get_T_fixed() + BCs[BC_TOP].get_T_fixed());
 
   while (max_dif > tol && it < max_it) {
     it++;
@@ -208,35 +251,35 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
     T_old.fill(*T);
 
     // Bottom-left corner
-    if (BC.bottom.get_type() == BC_CONVECTIVE && BC.left.get_type() == BC_CONVECTIVE) {
-      (*T)(0, 0) = (0.5 * BC.left.get_h() * BC.left.get_T_inf() * dy(0) +
+    if (BCs[BC_BOTTOM].get_type() == BC_CONVECTIVE && BCs[BC_LEFT].get_type() == BC_CONVECTIVE) {
+      (*T)(0, 0) = (0.5 * BCs[BC_LEFT].get_h() * BCs[BC_LEFT].get_T_inf() * dy(0) +
                     kdydx(0, 0) * (*T)(1, 0) +
-                    0.5 * BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(0) +
+                    0.5 * BCs[BC_BOTTOM].get_h() * BCs[BC_BOTTOM].get_T_inf() * dx(0) +
                     kdxdy(0, 0) * (*T)(0, 1) +
                     Q_gen(0, 0)) / denom(0, 0);
     }
     // Bottom boundary
-    if (BC.bottom.get_type() == BC_CONVECTIVE) {
+    if (BCs[BC_BOTTOM].get_type() == BC_CONVECTIVE) {
       for (int i = 1; i < nx; i++) {
         (*T)(i, 0) = (kdydx(i - 1, 0) * (*T)(i - 1, 0) +
                       kdydx(i, 0) * (*T)(i + 1, 0) +
-                      BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(i) +
+                      BCs[BC_BOTTOM].get_h() * BCs[BC_BOTTOM].get_T_inf() * dx(i) +
                       kdxdy(i, 0) * (*T)(i, 1) +
                       Q_gen(i, 0)) / denom(i, 0);
       }
     }
     // Bottom-right corner
-    if (BC.bottom.get_type() == BC_CONVECTIVE && BC.right.get_type() == BC_CONVECTIVE) {
+    if (BCs[BC_BOTTOM].get_type() == BC_CONVECTIVE && BCs[BC_RIGHT].get_type() == BC_CONVECTIVE) {
       (*T)(nx, 0) = (kdydx(nx - 1, 0) * (*T)(nx - 1, 0) +
-                     0.5 * BC.right.get_h() * BC.right.get_T_inf() * dy(0) +
-                     0.5 * BC.bottom.get_h() * BC.bottom.get_T_inf() * dx(nx - 1) +
+                     0.5 * BCs[BC_RIGHT].get_h() * BCs[BC_RIGHT].get_T_inf() * dy(0) +
+                     0.5 * BCs[BC_BOTTOM].get_h() * BCs[BC_BOTTOM].get_T_inf() * dx(nx - 1) +
                      kdxdy(nx, 0) * (*T)(nx, 1) +
                      Q_gen(nx, 0)) / denom(nx, 0);
     }
     for (int j = 1; j < ny; j++) {
       // Left boundary
-      if (BC.left.get_type() == BC_CONVECTIVE) {
-        (*T)(0, j) = (BC.left.get_h() * BC.left.get_T_inf() * dy(j) +
+      if (BCs[BC_LEFT].get_type() == BC_CONVECTIVE) {
+        (*T)(0, j) = (BCs[BC_LEFT].get_h() * BCs[BC_LEFT].get_T_inf() * dy(j) +
                       kdydx(0, j) * (*T)(1, j) +
                       kdxdy(0, j - 1) * (*T)(0, j - 1) +
                       kdxdy(0, j) * (*T)(0, j + 1) +
@@ -251,38 +294,38 @@ void solve_fourier_2D(const Array<double> x, const Array<double> y,
                       Q_gen(i, j)) / denom(i, j);
       }
       // Right boundary
-      if (BC.right.get_type() == BC_CONVECTIVE) {
+      if (BCs[BC_RIGHT].get_type() == BC_CONVECTIVE) {
         (*T)(nx, j) = (kdydx(nx - 1, j) * (*T)(nx - 1, j) +
-                       BC.right.get_h() * BC.right.get_T_inf() * dy(j) +
+                       BCs[BC_RIGHT].get_h() * BCs[BC_RIGHT].get_T_inf() * dy(j) +
                        kdxdy(nx, j - 1) * (*T)(nx, j - 1) +
                        kdxdy(nx, j) * (*T)(nx, j + 1) +
                        Q_gen(nx, j)) / denom(nx, j);
       }
     }
     // Top-left corner
-    if (BC.top.get_type() == BC_CONVECTIVE && BC.left.get_type() == BC_CONVECTIVE) {
-      (*T)(0, ny) = (0.5 * BC.left.get_h() * BC.left.get_T_inf() * dy(ny - 1) +
+    if (BCs[BC_TOP].get_type() == BC_CONVECTIVE && BCs[BC_LEFT].get_type() == BC_CONVECTIVE) {
+      (*T)(0, ny) = (0.5 * BCs[BC_LEFT].get_h() * BCs[BC_LEFT].get_T_inf() * dy(ny - 1) +
                      kdydx(0, ny) * (*T)(0 + 1, ny) +
                      kdxdy(0, ny - 1) * (*T)(0, ny - 1) +
-                     0.5 * BC.top.get_h() * BC.top.get_T_inf() * dx(0) +
+                     0.5 * BCs[BC_TOP].get_h() * BCs[BC_TOP].get_T_inf() * dx(0) +
                      Q_gen(0, ny)) / denom(0, ny);
     }
     // Top boundary
-    if (BC.top.get_type() == BC_CONVECTIVE) {
+    if (BCs[BC_TOP].get_type() == BC_CONVECTIVE) {
       for (int i = 1; i < nx; i++) {
         (*T)(i, ny) = (kdydx(i - 1, ny) * (*T)(i - 1, ny) +
                        kdydx(i, ny) * (*T)(i + 1, ny) +
                        kdxdy(i, ny - 1) * (*T)(i, ny - 1) +
-                       BC.top.get_h() * BC.top.get_T_inf() * dx(i) +
+                       BCs[BC_TOP].get_h() * BCs[BC_TOP].get_T_inf() * dx(i) +
                        Q_gen(i, ny)) / denom(i, ny);
       }
     }
     // Top-right corner
-    if (BC.top.get_type() == BC_CONVECTIVE && BC.right.get_type() == BC_CONVECTIVE) {
+    if (BCs[BC_TOP].get_type() == BC_CONVECTIVE && BCs[BC_RIGHT].get_type() == BC_CONVECTIVE) {
       (*T)(nx, ny) = (kdydx(nx - 1, ny) * (*T)(nx - 1, ny) +
-                      0.5 * BC.right.get_h() * BC.right.get_T_inf() * dy(ny - 1) +
+                      0.5 * BCs[BC_RIGHT].get_h() * BCs[BC_RIGHT].get_T_inf() * dy(ny - 1) +
                       kdxdy(nx, ny - 1) * (*T)(nx, ny - 1) +
-                      0.5 * BC.top.get_h() * BC.top.get_T_inf() * dx(nx - 1) +
+                      0.5 * BCs[BC_TOP].get_h() * BCs[BC_TOP].get_T_inf() * dx(nx - 1) +
                       Q_gen(nx, ny)) / denom(nx, ny);
     }
 
@@ -322,7 +365,8 @@ int main(int argc, char** argv) {
   // Parameters
   double Lx, Ly;
   int nx, ny;
-  read_params_from_file(data_dir + "/params.txt", Lx, Ly, nx, ny);
+  BoundaryConds BCs;
+  read_params_from_file(data_dir + "/params.txt", Lx, Ly, nx, ny, BCs);
 
   int n = nx * ny;      // Total number of spatial regions
   double dx = Lx / nx;  // x-direction interval
@@ -347,22 +391,11 @@ int main(int argc, char** argv) {
   Array<double> Q(nx + 1, ny + 1);
   Q.fill_from_file(data_dir + "/Q.txt");
 
-  // Boundary conditions
-  BoundaryConds BC;
-  BC.left.set_type(BC_CONVECTIVE, 10., 0.);
-  BC.right.set_type(BC_CONVECTIVE, 10., 0.);
-  BC.bottom.set_type(BC_CONVECTIVE, 10., 0.);
-  BC.top.set_type(BC_CONVECTIVE, 10., 0.);
-  //BC.left.set_type(BC_FIXED_TEMP, 2000.);
-  //BC.right.set_type(BC_FIXED_TEMP, 2000.);
-  //BC.bottom.set_type(BC_FIXED_TEMP, 2000.);
-  //BC.top.set_type(BC_FIXED_TEMP, 2000.);
-
   // Solve
   Array<double> T(nx + 1, ny + 1);
   std::chrono::high_resolution_clock::time_point t1, t2;
   t1 = std::chrono::high_resolution_clock::now();
-  solve_fourier_2D(x, y, k, Q, BC, &T, 100000, 1.e-8);
+  solve_fourier_2D(x, y, k, Q, BCs, &T, 100000, 1.e-8);
   t2 = std::chrono::high_resolution_clock::now();
   int elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
   std::cout << "Elapsed time: " << elapsed << " ms" << std::endl;

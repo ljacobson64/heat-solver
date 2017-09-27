@@ -3,10 +3,21 @@
 
 #include "Common.hpp"
 
+#define BC_LEFT 0
+#define BC_RIGHT 1
+#define BC_BOTTOM 2
+#define BC_TOP 3
+
+#define BC_SIDE_MIN 0
+#define BC_SIDE_MAX 3
+
 #define BC_FIXED_TEMP 0
 #define BC_FIXED_FLUX 1
 #define BC_CONVECTIVE 2
 #define BC_ADIABATIC 3
+
+#define BC_TYPE_MIN 0
+#define BC_TYPE_MAX 3
 
 class BoundaryCond {
  public:
@@ -29,11 +40,6 @@ class BoundaryCond {
   double h;  // Heat transfer coefficient [W/m^2-K]
 };
 
-struct BoundaryConds {
-  BoundaryCond left;
-  BoundaryCond right;
-  BoundaryCond bottom;
-  BoundaryCond top;
-};
+typedef std::vector<BoundaryCond> BoundaryConds;
 
 #endif
